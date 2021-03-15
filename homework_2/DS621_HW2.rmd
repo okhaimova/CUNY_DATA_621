@@ -98,9 +98,26 @@ _Write a function that takes the data set as a dataframe, with actual and predic
 $$Classification Error Rate = \frac{FP + FN}{TP + FP + TN + FN}$$
 
 ```{r, classificationErrorRateFunction}
-class_error_rate <- function() {
 
+class_error_rate <- function(df,col1,col2) {
+  true = df[,col1]
+  predict = df[,col2]
+  # total events
+  len = length(true)
+  # total errors
+  error = 0
+  for (i in seq(len)){
+    if (true[i] != predict[i]){
+      error = error + 1
+    }
+  }
+  # error rate
+  return (error/len)
 }
+#example 
+class_error_rate(data_raw,'class','scored.class')
+}
+
 ```
 
 
