@@ -163,9 +163,17 @@ $$Specificity = \frac{TP}{TN + FP}$$
 
 ```{r, specificityFunction}
 
-specificity <- function(){
+specificity <- function(data){
   
+  true_negative <- sum(data$scored.class == 0 & data$class == 0)
+  false_positive <- sum(data$scored.class == 1 & data$class == 0)
+  
+  specificity <- true_negative / (true_negative + false_positive) 
+  
+  return(specificity)
 }
+
+specificity(data)
 ```
 
 
