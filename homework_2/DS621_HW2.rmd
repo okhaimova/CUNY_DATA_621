@@ -170,7 +170,7 @@ $$Sensitivity = \frac{TP}{TP + FN}$$
 sensitivity <- function(data) {
   
   true_positive <- sum(data$class == 1 & data$scored.class == 1)
-  false_negative <- sum(data$class == 0 & data$scored.class == 1)
+  false_negative <- sum(data$class == 1 & data$scored.class == 0)
   
   sensitivity <- true_positive / (true_positive + false_negative)
    
