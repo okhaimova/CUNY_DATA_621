@@ -116,7 +116,7 @@ class_error_rate <- function(df,col1,col2) {
 }
 #example 
 class_error_rate(data_raw,'class','scored.class')
-}
+
 
 ```
 
@@ -165,9 +165,19 @@ $$Sensitivity = \frac{TP}{TP + FN}$$
 
 ```{r, sensitivityFunction}
 #note: there is a built in function in package caret called sensitivity
-sensitivity <- function() {
+# head(data)
+
+sensitivity <- function(data) {
   
+  true_positive <- sum(data$class == 1 & data$scored.class == 1)
+  false_negative <- sum(data$class == 0 & data$scored.class == 1)
+  
+  sensitivity <- true_positive / (true_positive + false_negative)
+   
+  return(sensitivity)
 } 
+
+sensitivity(data)
 ```
 
 
