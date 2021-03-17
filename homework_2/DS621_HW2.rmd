@@ -90,9 +90,24 @@ _Write a function that takes the data set as a dataframe, with actual and predic
 $$Accuracy = \frac{TP + TN}{TP + FP + TN + FN}$$
 
 ```{r, accuracyFunction}
-accuracy <- function() {
-
+accuracy <- function(df,col1,col2) {
+  true = df[,col1]
+  predict = df[,col2]
+  # total events
+  len = length(true)
+  # total correct predictions
+  correct = 0
+  for (i in seq(len)){
+    if (true[i] == predict[i]){
+      correct = correct + 1
+    }
+  }
+  # accuracy
+  return (correct/len)
 }
+#example 
+accuracy(data_raw,'class','scored.class')
+
 ```
 
 
