@@ -285,8 +285,25 @@ _classification metrics discussed above_.
 _Investigate the **caret** package. In particular, consider the functions confusionMatrix, sensitivity, and_
 _specificity. Apply the functions to the data set. How do the results compare with your own functions_?
 
+```{r}
+#convert the variables into factors as needed for the confusionMatrix
+data <- data %>%
+  mutate(scored.class = as.factor(scored.class),
+         class = as.factor(class))
+
+confusionMatrix(data$scored.class, data$class, positive = "1")
+
+caret::sensitivity(data$scored.class, data$class, positive = "1")
+
+caret::specificity(data$scored.class, data$class, negative = "0")
+```
 
 ### Task 13
 
 _Investigate the **pROC** package. Use it to generate an ROC curve for the data set. How do the results_
 _compare with your own functions_?
+
+```{r}
+pROC <- roc(data_raw$class, data_raw$scored.probability)
+plot(pROC, main = "pROC curve")
+```
