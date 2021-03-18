@@ -45,6 +45,11 @@ _Download the classification output data set_.
 data_raw <- read.csv("https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework_2/classification-output-data.csv")
 ```
 
+```{r}
+data_raw%>%head(50)
+```
+
+
 
 ### Task 2
 
@@ -85,9 +90,24 @@ _Write a function that takes the data set as a dataframe, with actual and predic
 $$Accuracy = \frac{TP + TN}{TP + FP + TN + FN}$$
 
 ```{r, accuracyFunction}
-accuracy <- function() {
-
+accuracy <- function(df,col1,col2) {
+  true = df[,col1]
+  predict = df[,col2]
+  # total events
+  len = length(true)
+  # total correct predictions
+  correct = 0
+  for (i in seq(len)){
+    if (true[i] == predict[i]){
+      correct = correct + 1
+    }
+  }
+  # accuracy
+  return (correct/len)
 }
+#example 
+accuracy(data_raw,'class','scored.class')
+
 ```
 
 
@@ -116,7 +136,7 @@ class_error_rate <- function(df,col1,col2) {
 }
 #example 
 class_error_rate(data_raw,'class','scored.class')
-}
+
 
 ```
 
@@ -165,9 +185,19 @@ $$Sensitivity = \frac{TP}{TP + FN}$$
 
 ```{r, sensitivityFunction}
 #note: there is a built in function in package caret called sensitivity
-sensitivity <- function() {
+# head(data)
+
+sensitivity <- function(data) {
   
+  true_positive <- sum(data$class == 1 & data$scored.class == 1)
+  false_negative <- sum(data$class == 1 & data$scored.class == 0)
+  
+  sensitivity <- true_positive / (true_positive + false_negative)
+   
+  return(sensitivity)
 } 
+
+sensitivity(data)
 ```
 
 
@@ -203,15 +233,37 @@ $$F1 Score = \frac{2 \times Precision \times Sensitivity }{Precision + Sensitvit
 
 ```{r, f1ScoreFunction}
 # Should be based on the previous functions, so something like the below...
-fi_score <- function(x){
-  2*sensitivity(x)*precision(x)/(precision(x) + sensitivity(x))
+f1_score<-function(data){
+  sens<-sensitivity(data)
+  prec<-precision(data)
+  f1<-2*sens*prec/(prec+sens)
+  return(f1)
 }
+
+f1_score(data)
+
 ```
 
 
 ### Task 9
 
 _What are the bounds on the F1 score? Show that the F1 score will always be between 0 and 1_.
+
+```{r}
+#data1<-data.frame(rep(0,5),rep(0,5))
+#data1<-data.frame(rep(0,5),rep(1,5))
+#data1<-data.frame(rep(1,5),rep(0,5))
+data1<-data.frame(rep(1,5),rep(1,5))
+colnames(data1)<-c('class','scored.class')
+data1
+precision(data1)
+sensitivity(data1)
+f1_score(data1)
+
+
+```
+
+
 
 
 ### Task 10
