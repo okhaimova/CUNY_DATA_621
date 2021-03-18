@@ -297,7 +297,7 @@ roc_curve_generator <- function(class, probability) {
   AUC <- round(sum(roc_data$TPR * c(diff(roc_data$FPR), 0)) + sum(c(diff(roc_data$TPR)) * c(diff(roc_data$FPR), 0)) / 2, 2)
 
   # Generate the ROC Curve plot.
-  plot(FPR, TPR, 'l', main = 'ROC Curve Plot', xlab = 'False Positive Rate', ylab = 'True Positive Rate')
+  plot(FPR, TPR, 'l', main = 'ROC Curve Plot', xlab = 'Specificity', ylab = 'Sensitivity')
   grid (10, 10, lty = 1, col = 'palevioletred1')
   polygon(c(FPR, 1, 1), c(TPR, 0, 1), col = 'green', density = 55, angle = 50)
   polygon(c(0, 0, 1, 1), c(0, 1, 1, 0), col = 'black', density = 0, lty = 6)
