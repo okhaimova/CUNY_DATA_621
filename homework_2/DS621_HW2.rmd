@@ -274,7 +274,7 @@ _(AUC). Note that I recommend using a sequence of thresholds ranging from 0 to 1
 
 ```{r, ROCFunction, message=FALSE, warning=FALSE, error=FALSE}
 roc_curve_generator <- function(class, probability) {
-  # Loop through the thresholds and create a dataframe for each item (0, 1, 0.01).
+  # Loop through the thresholds and create a dataframe for each item (0 through 1 in increments of 0.01).
   for (threshold in seq(0, 1, 0.01)) {
     threshold_data <- data.frame(class = class,
                 scored.class = if_else(probability >= threshold, 1, 0),
@@ -297,12 +297,12 @@ roc_curve_generator <- function(class, probability) {
   AUC <- round(sum(roc_data$TPR * c(diff(roc_data$FPR), 0)) + sum(c(diff(roc_data$TPR)) * c(diff(roc_data$FPR), 0)) / 2, 2)
 
   # Generate the ROC Curve plot.
-  plot(FPR, TPR, 'l', main = 'ROC Curve', xlab = 'False Positive Rate', ylab = 'True Positive Rate')
-  grid (10, 10, lty = 6, col = 'palevioletred1')
-  polygon(c(FPR, 1, 1), c(TPR, 0, 1), col = 'green', density = 20, angle = 45)
+  plot(FPR, TPR, 'l', main = 'ROC Curve Plot', xlab = 'False Positive Rate', ylab = 'True Positive Rate')
+  grid (10, 10, lty = 1, col = 'palevioletred1')
+  polygon(c(FPR, 1, 1), c(TPR, 0, 1), col = 'green', density = 55, angle = 50)
   polygon(c(0, 0, 1, 1), c(0, 1, 1, 0), col = 'black', density = 0, lty = 6)
-  abline(a = 0, b = 1, col = 'red')
-  legend(0.5, 0.45, AUC, title = 'AUC')
+  abline(a = 0, b = 1, col = 'red', lwd = 1.8)
+  legend(0.5, 0.45, AUC, title = 'AUC', cex = 1.2)
 }
 
 # Call the function to generate example output.
