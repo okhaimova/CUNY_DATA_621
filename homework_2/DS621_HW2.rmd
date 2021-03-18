@@ -21,6 +21,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(caret)
 library(pROC)
+library(grid)
 ```
 
 
@@ -210,7 +211,7 @@ $$Specificity = \frac{TN}{TN + FP}$$
 
 ```{r, specificityFunction}
 
-specificity <- function(data){
+specificity <- function(data) {
   
   true_negative <- sum(data$scored.class == 0 & data$class == 0)
   false_positive <- sum(data$scored.class == 1 & data$class == 0)
@@ -233,10 +234,10 @@ $$F1 Score = \frac{2 \times Precision \times Sensitivity }{Precision + Sensitvit
 
 ```{r, f1ScoreFunction}
 # Should be based on the previous functions, so something like the below...
-f1_score<-function(data){
-  sens<-sensitivity(data)
-  prec<-precision(data)
-  f1<-2*sens*prec/(prec+sens)
+f1_score <- function(data) {
+  sens <- sensitivity(data)
+  prec <- precision(data)
+  f1 <- 2 * sens * prec / (prec+sens)
   return(f1)
 }
 
@@ -249,7 +250,7 @@ f1_score(data)
 
 _What are the bounds on the F1 score? Show that the F1 score will always be between 0 and 1_.
 
-```{r}
+```{r, F1Bounds}
 #data1<-data.frame(rep(0,5),rep(0,5))
 #data1<-data.frame(rep(0,5),rep(1,5))
 #data1<-data.frame(rep(1,5),rep(0,5))
@@ -259,8 +260,6 @@ data1
 precision(data1)
 sensitivity(data1)
 f1_score(data1)
-
-
 ```
 
 
@@ -272,6 +271,43 @@ _Write a function that generates an ROC curve from a data set with a true classi
 _example) and a probability column (scored.probability in our example). Your function should return a list_
 _that includes the plot of the ROC curve and a vector that contains the calculated area under the curve_
 _(AUC). Note that I recommend using a sequence of thresholds ranging from 0 to 1 at 0.01 intervals_.
+
+```{r, ROCFunction, message=FALSE, warning=FALSE, error=FALSE}
+roc_curve_generator <- function(class, probability) {
+  # Loop through the thresholds and create a dataframe for each item (0, 1, 0.01).
+  for (threshold in seq(0, 1, 0.01)) {
+    threshold_data <- data.frame(class = class,
+                scored.class = if_else(probability >= threshold, 1, 0),
+                scored.probability = probability)
+
+    # Utilize the custom specificity() and sensitivity() functions we defined earlier
+    # to calcualate the True positive Rate (TPR), and False Positive Rate (FPR).
+    if (!exists('FPR') & !exists('TPR')) {
+      FPR <- 1 - specificity(threshold_data)
+      TPR <- sensitivity(threshold_data)
+    }
+    else {
+      FPR <- c(FPR, 1 - specificity(threshold_data))
+      TPR <- c(TPR, sensitivity(threshold_data))
+    }
+  }
+
+  # Calculate the Area Under the Curve (AUC) rounded to 2 decimal places.
+  roc_data <- data.frame(TPR, FPR) %>% arrange(FPR)
+  AUC <- round(sum(roc_data$TPR * c(diff(roc_data$FPR), 0)) + sum(c(diff(roc_data$TPR)) * c(diff(roc_data$FPR), 0)) / 2, 2)
+
+  # Generate the ROC Curve plot.
+  plot(FPR, TPR, 'l', main = 'ROC Curve', xlab = 'False Positive Rate', ylab = 'True Positive Rate')
+  grid (10, 10, lty = 6, col = 'palevioletred1')
+  polygon(c(FPR, 1, 1), c(TPR, 0, 1), col = 'green', density = 20, angle = 45)
+  polygon(c(0, 0, 1, 1), c(0, 1, 1, 0), col = 'black', density = 0, lty = 6)
+  abline(a = 0, b = 1, col = 'red')
+  legend(0.5, 0.45, AUC, title = 'AUC')
+}
+
+# Call the function to generate example output.
+roc_curve_generator(data_raw$class, data_raw$scored.probability)
+```
 
 
 ### Task 11
