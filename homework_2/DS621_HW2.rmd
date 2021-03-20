@@ -315,6 +315,20 @@ roc_curve_generator(data_raw$class, data_raw$scored.probability)
 _Use your **created R functions** and the provided classification output data set to produce all of the_
 _classification metrics discussed above_.
 
+```{r}
+acc = accuracy(data_raw,'class','scored.class')
+class_error = class_error_rate(data_raw,'class','scored.class')
+prec = precision(data)
+sens = sensitivity(data)
+spec = specificity(data)
+f1 = f1_score(data)
+paste("Accuracy is: ",acc)
+paste("Class Error Rate is: ",class_error)
+paste("Precision is: ", prec)
+paste("Sensitivity is: ", sens)
+paste("Specificity is: ",spec)
+paste("F1 Score is: ",f1)
+```
 
 ### Task 12
 
