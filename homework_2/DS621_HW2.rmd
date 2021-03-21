@@ -4,12 +4,13 @@ subtitle: "Classification Metrics"
 author: "Group 2"
 date: "3/10/2021"
 output:
+  pdf_document:
+    toc: yes
+    toc_depth: 3
   html_document:
     df_print: paged
     toc: yes
-  pdf_document:
-    toc: yes
-    toc_levels: yes
+  
 ---
 
 **Group 2 members:** _Alice Friedman, Diego Correa, Jagdish Chhabria, Orli Khaimova, Richard Zheng, Stephen Haslett_.
@@ -38,7 +39,7 @@ The data set has three key columns we will use:
 - **scored.probability:** the predicted probability of success for the observation
 
 
-### Task 1
+### Task 1: Downloading Data
 
 _Download the classification output data set_.
 
@@ -46,13 +47,8 @@ _Download the classification output data set_.
 data_raw <- read.csv("https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework_2/classification-output-data.csv")
 ```
 
-```{r}
-data_raw%>%head(50)
-```
 
-
-
-### Task 2
+### Task 2: Raw Confusion Matrix
 
 _Use the table() function to get the raw confusion matrix for this scored dataset. Make sure you understand the output. In particular, do the rows represent the actual or predicted class? The columns?_
 
@@ -60,7 +56,7 @@ _Use the table() function to get the raw confusion matrix for this scored datase
 # For the confusion matrix, we are only interested in the class and scored.class variables,
 # so we select only these variables and ignore the rest.
 confusion_matrix_table <- data_raw %>%
-  select(class, scored.class)
+  select(scored.class, class)
 
 # For readability purposes, rename 'scored.class' to Predicted, and 'class' to Actual.
 dplyr::rename(confusion_matrix_table, Predicted = scored.class, Actual = class) %>%
@@ -74,6 +70,7 @@ dplyr::rename(confusion_matrix_table, Predicted = scored.class, Actual = class) 
     table()
 ```
 
+\clearpage
 
 ## Functions
 
@@ -111,12 +108,13 @@ accuracy(data_raw,'class','scored.class')
 
 ```
 
+\clearpage
 
 ### Task 4: Classification Error Rate Function
 
 _Write a function that takes the data set as a dataframe, with actual and predicted classifications identified, and returns the classification error rate of the predictions_.
 
-$$Classification Error Rate = \frac{FP + FN}{TP + FP + TN + FN}$$
+$$Classification\ Error\ Rate = \frac{FP + FN}{TP + FP + TN + FN}$$
 
 ```{r, classificationErrorRateFunction}
 
@@ -141,6 +139,7 @@ class_error_rate(data_raw,'class','scored.class')
 
 ```
 
+\clearpage
 
 ### Task 5: Precision Function
 
@@ -176,6 +175,7 @@ precision <- function(data) {
 precision(data)
 ```
 
+\clearpage
 
 ### Task 6: Sensitivity Function
 
@@ -185,9 +185,6 @@ _and returns the sensitivity of the predictions. Sensitivity is also known as re
 $$Sensitivity = \frac{TP}{TP + FN}$$
 
 ```{r, sensitivityFunction}
-#note: there is a built in function in package caret called sensitivity
-# head(data)
-
 sensitivity <- function(data) {
   
   true_positive <- sum(data$class == 1 & data$scored.class == 1)
@@ -224,13 +221,14 @@ specificity <- function(data) {
 specificity(data)
 ```
 
+\clearpage
 
 ### Task 8: F1 Score Function
 
 _Write a function that takes the data set as a dataframe, with actual and predicted classifications identified,_
 _and returns the F1 score of the predictions._
 
-$$F1 Score = \frac{2 \times Precision \times Sensitivity }{Precision + Sensitvity}$$
+$$F1\ Score = \frac{2 \times Precision \times Sensitivity }{Precision + Sensitvity}$$
 
 ```{r, f1ScoreFunction}
 # Should be based on the previous functions, so something like the below...
@@ -245,27 +243,56 @@ f1_score(data)
 
 ```
 
+\clearpage
 
-### Task 9
+### Task 9: F1 Score Bounds
 
 _What are the bounds on the F1 score? Show that the F1 score will always be between 0 and 1_.
 
-```{r, F1Bounds}
-#data1<-data.frame(rep(0,5),rep(0,5))
-#data1<-data.frame(rep(0,5),rep(1,5))
-#data1<-data.frame(rep(1,5),rep(0,5))
-data1<-data.frame(rep(1,5),rep(1,5))
-colnames(data1)<-c('class','scored.class')
-data1
-precision(data1)
-sensitivity(data1)
-f1_score(data1)
-```
+The bounds of the F1 score will always be between 0 and 1. It is the harmonic mean 
+of precision and sensitivity and it denotes how accurate a model is. 
 
+Precision is bounded between 0 and 1. Likewise, sensitivity is bounded by 0 and 1.
+When they are multiplied together, their product will always be smaller than the original
+number. 
 
+$$0 \leq precision \leq 1 \qquad \qquad 0 \leq sensitivity \leq 1$$
 
+Since the lower bounds are both zero, the lower bound of the product would also be 0.
+Likewise, since the upper bounds are both 1, the upper bound of the product would
+also be 1.
 
-### Task 10
+$$0 \leq precision \cdot sensitivity \leq 1$$
+$$0 \cdot sensitivity \leq precision \cdot sensitivity \leq 1 \cdot sensitivity$$
+$$0 \leq precision \cdot sensitivity \leq sensitivity$$
+
+If we multiply by a factor of 2, we get:
+
+$$2 \cdot 0 \leq 2 \cdot precision \cdot sensitivity \leq 2\cdot sensitivity $$
+$$0 \leq 2 \cdot precision \cdot sensitivity \leq 2 \cdot sensitivity $$
+
+If we add precision and sensitivity, we get:
+
+$$0 + 0\leq precision + sensitivity \leq 1 +1$$
+$$0 \leq precision + sensitivity \leq 2$$
+
+We can combine by dividing the product by the sum to get the F1 Score.
+
+$$\frac{0}{0} \leq \frac{2 \cdot precision \cdot sensitivity}{precision + sensitivity} 
+\leq \frac {2 \cdot sensitivity}{2} \Rightarrow 0 < \frac{2 \cdot precision \cdot sensitivity}{precision + sensitivity} \leq sensitivity \leq 1$$
+
+It should be noted that if both precision and sensitivity are 0, then the F1 score
+would be undefined, since the denominator would be 0. It would also mean that the model
+is not accurate as there are no true positives, which is not wanted or that the sample 
+was too small. Henceforth, it can be said that the lower bound would be 0.
+
+The F1 score is bounded between 0 and sensitivity, when multiplied by sensitivity whose 
+upper bound is 1. It can also be replicated when multiplying by precision. Hence, the bounds 
+of the F1 score are always between 0 and 1. 
+
+\clearpage
+
+### Task 10: ROC curve
 
 _Write a function that generates an ROC curve from a data set with a true classification column (class in our_
 _example) and a probability column (scored.probability in our example). Your function should return a list_
@@ -274,7 +301,8 @@ _(AUC). Note that I recommend using a sequence of thresholds ranging from 0 to 1
 
 ```{r, ROCFunction, message=FALSE, warning=FALSE, error=FALSE}
 roc_curve_generator <- function(class, probability) {
-  # Loop through the thresholds and create a dataframe for each item (0 through 1 in increments of 0.01).
+  # Loop through the thresholds and create a dataframe for each item 
+  # (0 through 1 in increments of 0.01).
   for (threshold in seq(0, 1, 0.01)) {
     threshold_data <- data.frame(class = class,
                 scored.class = if_else(probability >= threshold, 1, 0),
@@ -294,7 +322,8 @@ roc_curve_generator <- function(class, probability) {
 
   # Calculate the Area Under the Curve (AUC) rounded to 2 decimal places.
   roc_data <- data.frame(TPR, FPR) %>% arrange(FPR)
-  AUC <- round(sum(roc_data$TPR * c(diff(roc_data$FPR), 0)) + sum(c(diff(roc_data$TPR)) * c(diff(roc_data$FPR), 0)) / 2, 2)
+  AUC <- round(sum(roc_data$TPR * c(diff(roc_data$FPR), 0)) + 
+                 sum(c(diff(roc_data$TPR)) * c(diff(roc_data$FPR), 0)) / 2, 2)
 
   # Generate the ROC Curve plot.
   plot(FPR, TPR, 'l', main = 'ROC Curve Plot', xlab = 'Specificity', ylab = 'Sensitivity')
@@ -309,8 +338,9 @@ roc_curve_generator <- function(class, probability) {
 roc_curve_generator(data_raw$class, data_raw$scored.probability)
 ```
 
+\clearpage
 
-### Task 11
+### Task 11: Classification metrics
 
 _Use your **created R functions** and the provided classification output data set to produce all of the_
 _classification metrics discussed above_.
@@ -330,7 +360,9 @@ paste("Specificity is: ",spec)
 paste("F1 Score is: ",f1)
 ```
 
-### Task 12
+\clearpage
+
+### Task 12: Caret Package
 
 _Investigate the **caret** package. In particular, consider the functions confusionMatrix, sensitivity, and_
 _specificity. Apply the functions to the data set. How do the results compare with your own functions_?
@@ -348,7 +380,13 @@ caret::sensitivity(data$scored.class, data$class, positive = "1")
 caret::specificity(data$scored.class, data$class, negative = "0")
 ```
 
-### Task 13
+The confusion matrix is exactly the same as the one produced in task 2. Sensitivity
+and specificity also have the same output as created by the R functions. Precision 
+is equal to `Pos Pred Value` in the chart.
+
+\clearpage
+
+### Task 13: pROC Package
 
 _Investigate the **pROC** package. Use it to generate an ROC curve for the data set. How do the results_
 _compare with your own functions_?
@@ -357,3 +395,6 @@ _compare with your own functions_?
 pROC <- roc(data_raw$class, data_raw$scored.probability)
 plot(pROC, main = "pROC curve")
 ```
+
+The ROC curve is similar to the one created in our own function in Task 10. This
+one is more jagged while ours has smoother lines.
