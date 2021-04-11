@@ -1,0 +1,77 @@
+---
+title: "Homework 3"
+subtitle: "Crime Logistic Regression"
+author: "Group 2"
+date: "4/11/2021"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 3
+  html_document:
+    df_print: paged
+    toc: yes
+  
+---
+
+**Group 2 members:** _Diego Correa, Jagdish Chhabria, Orli Khaimova, Richard Zheng, Stephen Haslett_.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, include=TRUE)
+
+# Load required libraries.
+library(tidyverse)
+library(caret)
+library(pROC)
+library(grid)
+```
+
+
+## Assignment Overview
+
+In this homework assignment, you will explore, analyze, and model a data set containing information on crime for various neighborhoods of a major city. Each record has a response variable indicating whether or not the crime rate is above the median crime rate (1) or not (0).
+
+Your objective is to build a binary logistic regression model on the training data set to predict whether the neighborhood will be at risk for high crime levels. You will provide classifications and probabilities for the evaluation data set using your binary logistic regression model. You can only use the variables given to you (or variables that you derive from the variables provided). Below is a short description of the variables of interest in the data set:
+
+* `zn`: the proportion of residential land zoned for large lots (over 25000 square feet) (predictor variable)
+* `indus`: the proportion of non-retail business acres per suburb (predictor variable)
+* `chas`: a dummy var. for whether the suburb borders the Charles River (1) or not (0) (predictor variable)
+* `nox`: nitrogen oxides concentration (parts per 10 million) (predictor variable)
+* `rm`: average number of rooms per dwelling (predictor variable)
+* `age`: the proportion of owner-occupied units built prior to 1940 (predictor variable)
+* `dis`: weighted mean of distances to five Boston employment centers (predictor variable)
+* `rad`: index of accessibility to radial highways (predictor variable)
+* `tax`: full-value property-tax rate per $10,000 (predictor variable)
+* `ptratio`: pupil-teacher ratio by town (predictor variable)
+* `lstat`: lower status of the population (percent) (predictor variable)
+* `medv`: median value of owner-occupied homes in $1000s (predictor variable)
+* `target`: whether the crime rate is above the median crime rate (1) or not (0) (response variable)
+
+\clearpage
+
+### Deliverables
+
+* A write-up submitted in PDF format. Your write-up should have four sections. Each one is described below. You may assume you are addressing me as a fellow data scientist, so do not need to shy away from technical details.
+* Assigned prediction (probabilities, classifications) for the evaluation data set. Use a 0.5 threshold.
+* Include your R statistical programming code in an Appendix.
+
+### Task 1: Data Exploration
+
+Describe the size and the variables in the crime training data set.
+
+
+### Task 2: Data Preparation
+
+Describe how you have transformed the data by changing the original variables or creating new variables.
+
+
+### Task 3: Build Models
+
+Using the training data, build at least three different binary logistic regression models, using different variables (or the same variables with different transformations).
+
+
+### Task 4: Select Models
+
+Decide on the criteria for selecting the best binary logistic regression model.
+
+
+### Appendix
