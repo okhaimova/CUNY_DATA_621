@@ -16,13 +16,17 @@ output:
 **Group 2 members:** _Diego Correa, Jagdish Chhabria, Orli Khaimova, Richard Zheng, Stephen Haslett_.
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, include=TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, include = TRUE)
 
 # Load required libraries.
 library(tidyverse)
 library(caret)
 library(pROC)
 library(grid)
+library(Amelia)
+library(ggplot2)
+library(kableExtra)
+library(corrplot)
 ```
 
 
@@ -56,12 +60,66 @@ Your objective is to build a binary logistic regression model on the training da
 
 ### Task 1: Data Exploration
 
-Describe the size and the variables in the crime training data set.
+**Describe the size and the variables in the crime training data set.**
 
+```{r, dataExploration, echo=FALSE}
+# Pull in the provided crime training and evaluation datasets.
+crime_training <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework%203/crime-training-data_modified.csv')
+crime_evaluation <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework%203/crime-evaluation-data_modified.csv')
+
+# Summarize the training dataset.
+summary(crime_training)
+```
+
+\clearpage
+
+**Check for missing values in the dataset.**
+
+```{r, dataExplorationVisulization, echo=FALSE}
+# Check for missing values using the Amelia package's missmap() function.
+missmap(crime_training, main = 'Missing Values Vs. Observed Values')
+```
 
 ### Task 2: Data Preparation
 
-Describe how you have transformed the data by changing the original variables or creating new variables.
+**Describe how you have transformed the data by changing the original variables or creating new variables.**
+
+There are no missing values in the dataset so there is no need to impute values. Instead, we will split the training dataset (crime-training-data_modified.csv) into training and test sets using a 70/30 split respectively.
+
+```{r, dataPreperationSplitData, echo=FALSE}
+# Split the training data into training and test datasets using a 70/30 split ratio.
+training_index <- createDataPartition(crime_training$target,
+                                      p = .7,
+                                      list = FALSE,
+                                      times = 1)
+
+# Define the training dataset.
+training_set <- crime_training[training_index,]
+
+# Define the test dataset.
+test_set <- crime_training[-training_index,]
+```
+
+**Summary of predictor variables in the training dataset.**
+
+```{r, dataPreperationTrainingDataExploration, echo=FALSE}
+training_set %>%
+  select(-target) %>%
+  summary()
+```
+
+
+```{r, dataPreperationTrainingDataCorrelation, echo=FALSE}
+training_set %>%
+  cor(.) %>%
+  corrplot(.,
+           title = 'Correlation Matrix of Training Set Predictor Variables',
+           method = 'color',
+           type = 'lower',
+           tl.col = 'black',
+           tl.srt = 45,
+           mar = c(0, 0, 2, 0))
+```
 
 
 ### Task 3: Build Models
