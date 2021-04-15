@@ -40,10 +40,11 @@ for (col in cols[1:col_size-1]){
 }
 ```
 
+# logistic model
 
 ```{r}
-loglm = glm(target~.-chas,training_set,family = "binomial")
+logm = glm(target~.-chas,training_set,family = "binomial")
 
-summary(loglm)
+summary(logm)
 ```
 
