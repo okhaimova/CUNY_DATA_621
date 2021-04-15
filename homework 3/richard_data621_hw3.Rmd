@@ -1,0 +1,49 @@
+---
+title: "DATA621_HW3"
+author: "Richard"
+date: "4/13/2021"
+output: html_document
+---
+
+# loading packages
+
+```{r}
+library(tidyverse)
+```
+
+# loading data
+
+```{r}
+url = 'https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework%203/crime-training-data_modified.csv'
+
+training_set = read.csv(url)
+```
+
+
+# EDA
+
+```{r}
+summary(training_set)
+```
+
+```{r}
+row_size = dim(training_set)[1]
+col_size = dim(training_set)[2]
+```
+
+```{r}
+cols = names(data)
+for (col in cols[1:col_size-1]){
+  plot = training_set %>%
+    ggplot(aes_string(x = col,y = 'target'))+geom_point(stat = 'identity')+labs(title = paste(col,'Vs.','target'))
+  print(plot)
+}
+```
+
+
+```{r}
+loglm = glm(target~.-chas,training_set,family = "binomial")
+
+summary(loglm)
+```
+
