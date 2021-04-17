@@ -297,9 +297,6 @@ dc_set2 <- dc_set2 %>%
 dc_set2$zn <- factor(dc_set2$zn, levels = names)
 
 summary(dc_set2)
-summary(dc_set)
-
-
 ```
 
 
