@@ -17,8 +17,8 @@ library(tidyverse)
 url = 'https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework%203/crime-training-data_modified.csv'
 
 training_set = read.csv(url)
+prediction_set = training_set
 ```
-
 
 # EDA
 
@@ -30,6 +30,8 @@ summary(training_set)
 row_size = dim(training_set)[1]
 col_size = dim(training_set)[2]
 ```
+
+# scatter plots
 
 ```{r}
 cols = names(data)
@@ -47,4 +49,22 @@ logm = glm(target~.-chas,training_set,family = "binomial")
 
 summary(logm)
 ```
+
+```{r}
+predict = predict(logm,type = "response")
+predictions = c()
+for (i in predict){
+  if (i>=0.5){
+    predictions =c(predictions,1)
+  }else{
+    predictions = c(predictions,0)
+  }
+}
+
+prediction_set$richard_model = predictions
+
+prediction_set
+
+```
+
 
