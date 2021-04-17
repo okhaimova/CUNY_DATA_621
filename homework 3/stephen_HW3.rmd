@@ -121,6 +121,24 @@ training_set %>%
            mar = c(0, 0, 2, 0))
 ```
 
+#### Distributions
+
+**take a look at the distribution profiles for each of the predictor variables.**
+
+```{r, predictorsDistributions, fig.height = 10, fig.width = 10, echo = FALSE}
+# Using the Dplyr package, massage the data by removing the target value prior
+# to plotting a histogram for each predictor variable.
+predictor_vars <- training_set %>% dplyr::select(-target) %>%
+  gather(key = 'predictor_variable', value = 'variable_value')
+
+# Plot and print a histogram for each predictor variable.
+predictor_variables_plot <- ggplot(predictor_vars) +
+  geom_histogram(aes(x = variable_value, y = ..density..), bins = 30, color = 'blue') +
+  geom_density(aes(x = variable_value), color = 'red') +
+  facet_wrap(. ~predictor_variable, scales = 'free', ncol = 3)
+
+print(predictor_variables_plot)
+```
 
 ### Task 3: Build Models
 
