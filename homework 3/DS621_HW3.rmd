@@ -71,7 +71,8 @@ evaluation_set <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DAT
 str(training_set)
 ```
 
-Based on the above data structure summary, the provided dataset consists of 13 variables and 466 observations.
+Based on the above data structure summary, the provided dataset consists of 13 variables and 466 observations. With the exception of the
+"chas" variable (which is a dummy variable), all of the variables are numeric. 
 
 ### Summary Statistics
 
