@@ -130,7 +130,7 @@ missmap(crime_training, main = 'Missing Values Vs. Observed Values')
 ```{r}
 # Binning the data using the OneR library, bin function
 
-names <- c(1,2,3,4,5)
+names <- c(1,2,3,4,5,6,7,8,9,10)
 training_set <- c()
 
 
@@ -139,11 +139,11 @@ for (i in 1:ncol(crime_training)){
   # target and chas columns are binary and does not make sense to bin
   if (!colnames(crime_training[i]) %in% c('target', 'chas')){
   
-    training_set[i] <- OneR::bin(crime_training[i], nbins = 5, labels = names,
+    training_set[i] <- OneR::bin(crime_training[i], nbins = 10, labels = names,
                                     method = 'length')
       
   }else {
-    training_set[i] <- crime_training[i]
+    training_set[i] <- (crime_training[i])
   }
 }
 
@@ -194,7 +194,34 @@ confusionMatrix(training_set$pred, training_set$target, positive = "1")
 caret::sensitivity(training_set$pred, training_set$target, positive = "1")
 caret::specificity(training_set$pred, training_set$target, negative = "0")
 caret::precision(training_set$pred, training_set$target, negative = "0")
+#F1 score
+#AUC
+```
+splitting training dataset
 
+
+```{r}
+#75% of sample size
+smp_size <- floor(0.75 * nrow(training_set))
+
+# sample rows from dataset
+set.seed(123)
+train_ind <- sample(seq_len(nrow(training_set)), size = smp_size)
+
+# creating the train and test datasets
+train <- training_set[train_ind,]
+test <- training_set[-train_ind,]
+
+# use training set to create model
+glm.fit2 <- glm(target ~ . , data = train, family = binomial)
+
+# using new model to predict values of the test dataset's target 
+glm.prob <- predict(glm.fit2, newdata = test, type = 'response')
+glm.pred <- ifelse(glm.prob > 0.5, 1, 0)
+
+# view results
+table(glm.pred, test$target)
+mean(glm.pred == test$target)
 ```
 
 
