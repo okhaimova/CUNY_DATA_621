@@ -1,0 +1,204 @@
+---
+title: "DS621_Group2_HW3_JC"
+author: "Jagdish Chhabria"
+date: "4/17/2021"
+output: html_document
+---
+
+**Group 2 members:** _Diego Correa, Jagdish Chhabria, Orli Khaimova, Richard Zheng, Stephen Haslett_.
+
+## Introduction
+
+### Assignment Objective
+
+In this homework assignment, you will explore, analyze and model a data set containing information on crime for various neighborhoods of a major city. Each record has a response variable indicating whether or not the crime rate is above the median crime rate (1) or not (0). Your objective is to build a binary logistic regression model on the training data set to predict whether the neighborhood will be at risk for high crime levels. You will provide classifications and probabilities for the evaluation data set using your binary logistic regression model. You can only use the variables given to you (or variables that you derive from the variables provided).
+
+#### Data
+
+There are 2 datasets provided - The crime training dataset and the crime evaluation dataset. The training dataset contains 13 columns and 466 rows. Each record in the Boston crime training dataset represents a neighborhood. For this assignment, the target variable in the dataset is the "target" which is a binary variable. 
+
+A short description of the variables of interest in the data set is given below:
+
+
+
+### Purpose of Analysis
+
+The purpose of the analysis is to find which of the predictors have significant ability to explain the variation in the response variable (whether or not the crime rate is above the median crime rate (1) or not (0)), and to make a prediction for all the records provided in the test data set, based on the predicted probabilities and a threshold of 0.5.
+
+### Method
+
+The method used is a logistic regression model on the training data to predict the probability of the crime rate for each neighborhood being above or below the median crime rate. 
+
+```{r}
+library(dplyr)
+library(gridExtra)
+#library(visdat)
+library(DT)
+library(MASS)
+library(tidyverse) #includes dplyr and ggplot2
+library(reshape2)
+library(kableExtra)
+library(corrplot)
+library(Hmisc)
+library(PerformanceAnalytics)
+library(car)
+
+```
+
+
+```{r setup, include=FALSE}
+# Load in the training data.
+url = "https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework 3/crime-training-data_modified.csv"
+#training_set <- read.csv(url)
+training_set<-read.csv(url)%>%dplyr::select(target,everything())
+
+```
+
+```{r}
+#rm(training_set)
+```
+
+
+```{r}
+#kable(head(training_set))
+head(training_set)
+#dim(training_set)
+```
+
+```{r}
+# Check for missing values
+any(is.na.data.frame(training_set))
+```
+```{r}
+glimpse(training_set)
+```
+
+
+```{r}
+# Converting the 2 categorical columns to factors
+training_set_mod<-training_set%>%mutate(chas = as.factor(chas),target = as.factor(target))%>% dplyr::select(target, everything())
+#DT::datatable(training_set)
+
+```
+
+
+```{r }
+
+summary(training_set)
+
+```
+
+```{r}
+tgt_variable<-table(training_set$target)
+tgt_variable
+```
+
+```{r}
+hist.data.frame(training_set)
+
+```
+
+```{r}
+train_num<-select_if(training_set,is.numeric)
+train_num %>%keep(is.numeric) %>%gather() %>%ggplot(aes(value))+facet_wrap(~ key, scales = "free") +   geom_density()
+
+```
+
+```{r}
+par(mfrow = c(4,3))
+boxplot(zn~target, ylab="zn", xlab= "target", col="steel blue",data = training_set)
+boxplot(indus~target, ylab="indus", xlab= "target", col="steel blue",data =  training_set)
+boxplot(chas~target, ylab="chas", xlab= "target", col="steel blue",data =  training_set)
+boxplot(nox~target, ylab="nox", xlab= "target", col="steel blue",data =  training_set)
+boxplot(rm~target, ylab="rm", xlab= "target", col="steel blue",data =  training_set)
+boxplot(age~target, ylab="age", xlab= "target", col="steel blue",data =  training_set)
+boxplot(dis~target, ylab="dis", xlab= "target", col="steel blue",data =  training_set)
+boxplot(rad~target, ylab="rad", xlab= "target", col="steel blue",data =  training_set)
+boxplot(tax~target, ylab="tax", xlab= "target", col="steel blue",data =  training_set)
+boxplot(ptratio~target, ylab="ptratio", xlab= "target", col="steel blue",data =  training_set)
+boxplot(lstat~target, ylab="lstat", xlab= "target", col="steel blue",data =  training_set)
+boxplot(medv~target, ylab="medv", xlab= "target", col="steel blue",data =  training_set)
+```
+
+
+
+
+## next
+
+```{r, echo=FALSE}
+
+#training_set %>%  cor() %>% corrplot.mixed(upper = 'pie', lower = 'number', order = 'hclust', tl.col = "black")
+
+corrplot(cor(training_set), method="square")
+
+```
+
+```{r}
+#PerformanceAnalytics::chart.Correlation(training_set, histogram=TRUE, pch=19)
+
+training_set%>%cor() %>%as.data.frame()%>%rownames_to_column('Variable')%>%
+dplyr::rename(Correlation_vs_Response = target)
+
+
+```
+
+
+```{r}
+
+model1<-glm(target~., family = binomial, data = training_set)
+summary(model1)
+```
+
+```{r}
+model2 <- stepAIC(model1, trace = FALSE)
+summary(model2)
+```
+```{r}
+
+
+```
+
+
+
+
+```{r}
+vif(model1)
+
+```
+
+```{r}
+# Predict the probability of crime positivity
+probabilities <- predict(model1,training_set,type = "response")
+predict.class <- ifelse(probabilities > 0.5, 1, 0)
+training_set$pred.class <- predict.class
+table("Predictions" = training_set$pred.class, "Actual" = training_set$target)
+```
+
+
+
+```{r}
+accuracy <- function(dataf){
+  cm <- table("Predictions" = dataf$pred.class, "Actual" = dataf$target)
+  
+  TP <- cm[2,2]
+  TN <- cm[1,1]
+  FP <- cm[2,1]
+  FN <- cm[1,2]
+  
+  return((TP + TN)/(TP + FP + TN + FN))
+}
+
+```
+
+
+
+```{r}
+accuracy(training_set)
+```
+
+
+
+```{r}
+
+```
+
