@@ -4,13 +4,13 @@ subtitle: "Crime Logistic Regression"
 author: "Group 2"
 date: "4/11/2021"
 output:
+  
   pdf_document:
     toc: yes
     toc_depth: 3
   html_document:
     df_print: paged
     toc: yes
-  
 ---
 
 **Group 2 members:** _Diego Correa, Jagdish Chhabria, Orli Khaimova, Richard Zheng, Stephen Haslett_.
@@ -62,7 +62,9 @@ Your objective is to build a binary logistic regression model on the training da
 
 **Describe the size and the variables in the crime training data set.**
 
-Todo: DESCRIPTION HERE
+### Summary Statistics
+
+The first step in our data analysis is to compile summary statistics for each of the variables in the provided dataset.
 
 ```{r, dataExploration, echo=FALSE}
 # Pull in the provided crime training and evaluation datasets.
@@ -77,7 +79,7 @@ summary(training_set)
 
 ### Missing Values
 
-The next step in our data exploration is to check for missing values in the data. As we can see from the below missingness map, there are no missing values and therefore we do not need to impute any of the values.
+Now that we have a better understanding of the dataset, we can move on to check for missing values in the data. As we can see from the below missingness map, there are no missing values and therefore we do not need to impute any of the values.
 
 ```{r, dataExplorationVisulization, echo=FALSE}
 # Check for missing values using the Amelia package's missmap() function.
@@ -97,6 +99,8 @@ predictor_vars <- training_set %>% dplyr::select(-target) %>%
 # Plot and print a histogram for each predictor variable.
 predictor_variables_plot <- ggplot(predictor_vars) +
   geom_histogram(aes(x = value, y = ..density..), bins = 30, color = 'blue') +
+  labs(title = 'Distributions of Predictor Variables') +
+  theme(plot.title = element_text(hjust = 0.5)) +
   geom_density(aes(x = value), color = 'red') +
   facet_wrap(. ~predictor_variable, scales = 'free', ncol = 3)
 
@@ -114,29 +118,29 @@ There are no missing values in the dataset so there is no need to impute values.
 
 ```{r, dataPreperationSplitData, echo=FALSE}
 # Split the training data into training and test datasets using a 70/30 split ratio.
-training_index <- createDataPartition(crime_training$target,
+training_index <- createDataPartition(training_set$target,
                                       p = .7,
                                       list = FALSE,
                                       times = 1)
 
 # Define the training dataset.
-training_set <- crime_training[training_index,]
+training_dataset <- training_set[training_index,]
 
 # Define the test dataset.
-test_set <- crime_training[-training_index,]
+test_dataset <- training_set[-training_index,]
 ```
 
 **Summary of predictor variables in the training dataset.**
 
 ```{r, dataPreperationTrainingDataExploration, echo=FALSE}
-training_set %>%
+training_dataset %>%
   select(-target) %>%
   summary()
 ```
 
 
 ```{r, dataPreperationTrainingDataCorrelation, echo=FALSE}
-training_set %>%
+training_dataset %>%
   cor(.) %>%
   corrplot(.,
            title = 'Correlation Matrix of Training Set Predictor Variables',
