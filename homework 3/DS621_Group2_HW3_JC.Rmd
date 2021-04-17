@@ -15,11 +15,26 @@ In this homework assignment, you will explore, analyze and model a data set cont
 
 #### Data
 
-There are 2 datasets provided - The crime training dataset and the crime evaluation dataset. The training dataset contains 13 columns and 466 rows. Each record in the Boston crime training dataset represents a neighborhood. For this assignment, the target variable in the dataset is the "target" which is a binary variable. 
+There are 2 datasets provided - The crime training dataset and the crime evaluation dataset. The training dataset contains 13 columns and 466 rows. Each record in the Boston crime training dataset represents a neighborhood. For this assignment, the target variable in the dataset is the "target" which is a binary variable. Since there is no separate column representing the neighborhood identifer, we use the dataframe index as the unique identifier or primary key for this data.
 
 A short description of the variables of interest in the data set is given below:
 
-
+| Variable Name | Definition                                                           | Variable Type |
+|---------------|----------------------------------------------------------------------|---------------|
+| zn       | proportion of residential land zoned for large lots (over 25000 square feet) | predictor |
+| indus    | proportion of non-retail business acres per suburb                           | predictor |
+| chas     | a dummy var. for whether the suburb borders the Charles River (1) or not (0) | predictor |
+| nox      | nitrogen oxides concentration (parts per 10 million)                         | predictor |
+| rm       | average number of rooms per dwelling                                         | predictor |
+| age      | proportion of owner-occupied units built prior to 1940                       | predictor |
+| dis      | weighted mean of distances to five Boston employment centers                 | predictor |
+| rad      | index of accessibility to radial highways                                    | predictor |
+| tax      | full-value property-tax rate per $10,000                                     | predictor |
+| ptratio  | pupil-teacher ratio by town                                                  | predictor |
+| black    | 1000(Bk - 0.63)2 where Bk is the proportion of blacks by town                | predictor |
+| lstat    | lower status of the population (percent)                                     | predictor |
+| medv     | median value of owner-occupied homes in $1000s                               | predictor |
+| target   | whether the crime rate is above the median crime rate (1) or not (0)         | response  |
 
 ### Purpose of Analysis
 
@@ -29,10 +44,16 @@ The purpose of the analysis is to find which of the predictors have significant 
 
 The method used is a logistic regression model on the training data to predict the probability of the crime rate for each neighborhood being above or below the median crime rate. 
 
-```{r}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, cache=TRUE, fig.pos="!h") #sets global options for chunks when *knit*
+knitr::include_graphics
+#Note: messages and warnings will still show when running in the R console
+
+# Disable scientific numbers for readability purposes.
+options(scipen = 999)
+
 library(dplyr)
 library(gridExtra)
-#library(visdat)
 library(DT)
 library(MASS)
 library(tidyverse) #includes dplyr and ggplot2
@@ -42,6 +63,8 @@ library(corrplot)
 library(Hmisc)
 library(PerformanceAnalytics)
 library(car)
+library(caret)
+library(MLmetrics)
 
 ```
 
@@ -51,6 +74,7 @@ library(car)
 url = "https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework 3/crime-training-data_modified.csv"
 #training_set <- read.csv(url)
 training_set<-read.csv(url)%>%dplyr::select(target,everything())
+prediction_set<-training_set
 
 ```
 
@@ -60,9 +84,8 @@ training_set<-read.csv(url)%>%dplyr::select(target,everything())
 
 
 ```{r}
-#kable(head(training_set))
-head(training_set)
-#dim(training_set)
+# Take a look at the training dataset
+glimpse(training_set)
 ```
 
 ```{r}
@@ -70,7 +93,7 @@ head(training_set)
 any(is.na.data.frame(training_set))
 ```
 ```{r}
-glimpse(training_set)
+
 ```
 
 
@@ -83,28 +106,33 @@ training_set_mod<-training_set%>%mutate(chas = as.factor(chas),target = as.facto
 
 
 ```{r }
-
+# Explore the various columns of the training dataset
 summary(training_set)
 
 ```
 
 ```{r}
+# Check the class imbalance for the target variable
 tgt_variable<-table(training_set$target)
 tgt_variable
 ```
 
 ```{r}
-hist.data.frame(training_set)
+# Check the distributions of the various columns
+#hist.data.frame(training_set)
 
 ```
 
+
 ```{r}
+# Check the distributions of the numeric columns
 train_num<-select_if(training_set,is.numeric)
 train_num %>%keep(is.numeric) %>%gather() %>%ggplot(aes(value))+facet_wrap(~ key, scales = "free") +   geom_density()
 
 ```
 
-```{r}
+```{r }
+# Plot box plots for the different predictors for each value of the target variable
 par(mfrow = c(4,3))
 boxplot(zn~target, ylab="zn", xlab= "target", col="steel blue",data = training_set)
 boxplot(indus~target, ylab="indus", xlab= "target", col="steel blue",data =  training_set)
@@ -120,70 +148,71 @@ boxplot(lstat~target, ylab="lstat", xlab= "target", col="steel blue",data =  tra
 boxplot(medv~target, ylab="medv", xlab= "target", col="steel blue",data =  training_set)
 ```
 
-
-
-
-## next
-
 ```{r, echo=FALSE}
+# Plot correlations between the variables
 
 #training_set %>%  cor() %>% corrplot.mixed(upper = 'pie', lower = 'number', order = 'hclust', tl.col = "black")
-
 corrplot(cor(training_set), method="square")
 
 ```
 
+
 ```{r}
+# Derive correlations between the variables
 #PerformanceAnalytics::chart.Correlation(training_set, histogram=TRUE, pch=19)
 
 training_set%>%cor() %>%as.data.frame()%>%rownames_to_column('Variable')%>%
-dplyr::rename(Correlation_vs_Response = target)
-
+dplyr::rename(Correlation_vs_Response_Variable = target)
 
 ```
 
 
 ```{r}
-
-model1<-glm(target~., family = binomial, data = training_set)
+# Fit a logistic regression model to the full dataset as-is
+model1<-glm(target~.,family = binomial, data = training_set)
 summary(model1)
 ```
 
 ```{r}
+# Apply step-wise AIC on the model above to identify key features
 model2 <- stepAIC(model1, trace = FALSE)
 summary(model2)
 ```
 ```{r}
-
+#BIC
 
 ```
 
 
-
-
 ```{r}
-vif(model1)
+#vif(model1)
 
 ```
 
 ```{r}
-# Predict the probability of crime positivity
-probabilities <- predict(model1,training_set,type = "response")
-predict.class <- ifelse(probabilities > 0.5, 1, 0)
-training_set$pred.class <- predict.class
-table("Predictions" = training_set$pred.class, "Actual" = training_set$target)
+# Using model 2, predict the probability of crime in the neighborhoods and then use those probabilities to classify the neighborhoods into a binary classification based on a threshold probability of 0.5
+
+probabilities<-predict(model2,training_set,type = "response")
+predict.class<-ifelse(probabilities > 0.5, 1, 0)
+prediction_set$jagdish.prediction<-predict.class
+table("Predictions" = prediction_set$jagdish.prediction, "Actual" = training_set$target)
 ```
 
 
+```{r}
+glimpse(prediction_set)
+```
+
 
 ```{r}
+# Function for accuracy of predictions
 accuracy <- function(dataf){
-  cm <- table("Predictions" = dataf$pred.class, "Actual" = dataf$target)
+  metrics <- table("Predictions" = dataf$jagdish.prediction, "Actual" = dataf$target)
   
-  TP <- cm[2,2]
-  TN <- cm[1,1]
-  FP <- cm[2,1]
-  FN <- cm[1,2]
+  TP <- metrics[2,2]
+  TN <- metrics[1,1]
+  FP <- metrics[2,1]
+  FN <- metrics[1,2]
   
   return((TP + TN)/(TP + FP + TN + FN))
 }
@@ -191,14 +220,119 @@ accuracy <- function(dataf){
 ```
 
 
-
 ```{r}
-accuracy(training_set)
+# Function for classification error of predictions
+classification.error<- function(dataf){
+  metrics <- table("Predictions" = dataf$jagdish.prediction, "Actual" = dataf$target)
+  
+  TP <- metrics[2,2]
+  TN <- metrics[1,1]
+  FP <- metrics[2,1]
+  FN <- metrics[1,2]
+  
+  return((FP + FN)/(TP + FP + TN + FN))
+}
 ```
 
 
+```{r}
+# Function for precision of predictions
+precision <- function(dataf){
+  metrics <- table("Predictions" = dataf$jagdish.prediction, "Actual" = dataf$target)
+  
+  TP <- metrics[2,2]
+  TN <- metrics[1,1]
+  FP <- metrics[2,1]
+  FN <- metrics[1,2]
+  
+  return(TP/(TP + FP))
+}
+
+```
+
+
+```{r}
+# Function for sensitivity of predictions
+sensitivity <- function(dataf){
+  metrics <- table("Predictions" = dataf$jagdish.prediction, "Actual" = dataf$target)
+  
+  TP <- metrics[2,2]
+  TN <- metrics[1,1]
+  FP <- metrics[2,1]
+  FN <- metrics[1,2]
+  
+  return((TP)/(TP + FN))
+}
+
+```
+
+
+```{r}
+# Function for specificity of predictions
+specificity<- function(dataf){
+  metrics <- table("Predictions" = dataf$jagdish.prediction, "Actual" = dataf$target)
+   
+  TP <- metrics[2,2]
+  TN <- metrics[1,1]
+  FP <- metrics[2,1]
+  FN <- metrics[1,2]
+  
+  return((TN)/(TN + FP))
+}
+```
+
+
+```{r}
+# Function for F1 Score of predictions
+f1score <- function(dataf){
+  metrics <- table("Predictions" = dataf$jagdish.prediction, "Actual" = dataf$target)
+   
+  TP <- metrics[2,2]
+  TN <- metrics[1,1]
+  FP <- metrics[2,1]
+  FN <- metrics[1,2]
+  
+  f1score <- (2 * precision(dataf) * sensitivity(dataf)) / (precision(dataf) + sensitivity(dataf))
+  return(f1score)
+}
+```
+
+
+```{r }
+# Calculate and display the classification metrics
+metric.names <- c('Accuracy','Classification Error Rate', 'Precision', 'Sensitivity','Specificity', 'F1 Score')
+scores<-round(c(accuracy(prediction_set), classification.error(prediction_set), precision(prediction_set), sensitivity(prediction_set), specificity(prediction_set), f1score(prediction_set)),4)
+
+df_metrics <- as.data.frame(cbind(metric.names, scores))
+kable(df_metrics)
+```
+
+
+```{r}
+# Derive the confusion matrix
+confusionMatrix(data=factor(prediction_set$target), factor(prediction_set$jagdish.prediction), positive = "1")
+
+```
+
+
+```{r}
+#predict_set<-prediction_set%>%subset(prediction_set$target, prediction_set$jagdish.prediction)
+#prSummary(predict_set)
+```
+
 
 ```{r}
 
 ```
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
 
