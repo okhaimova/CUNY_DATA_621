@@ -1,0 +1,201 @@
+---
+title: "Homework 3"
+subtitle: "Crime Logistic Regression"
+author: "Group 2"
+date: "4/11/2021"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 3
+  html_document:
+    df_print: paged
+    toc: yes
+  
+---
+
+**Group 2 members:** _Diego Correa, Jagdish Chhabria, Orli Khaimova, Richard Zheng, Stephen Haslett_.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, include = TRUE)
+
+# Load required libraries.
+library(tidyverse)
+library(caret)
+library(pROC)
+library(grid)
+library(Amelia)
+library(ggplot2)
+library(kableExtra)
+library(corrplot)
+library(reshape2)
+library(OneR)
+```
+
+
+## Assignment Overview
+
+In this homework assignment, you will explore, analyze, and model a data set containing information on crime for various neighborhoods of a major city. Each record has a response variable indicating whether or not the crime rate is above the median crime rate (1) or not (0).
+
+Your objective is to build a binary logistic regression model on the training data set to predict whether the neighborhood will be at risk for high crime levels. You will provide classifications and probabilities for the evaluation data set using your binary logistic regression model. You can only use the variables given to you (or variables that you derive from the variables provided). Below is a short description of the variables of interest in the data set:
+
+* `zn`: the proportion of residential land zoned for large lots (over 25000 square feet) (predictor variable)
+* `indus`: the proportion of non-retail business acres per suburb (predictor variable)
+* `chas`: a dummy var. for whether the suburb borders the Charles River (1) or not (0) (predictor variable)
+* `nox`: nitrogen oxides concentration (parts per 10 million) (predictor variable)
+* `rm`: average number of rooms per dwelling (predictor variable)
+* `age`: the proportion of owner-occupied units built prior to 1940 (predictor variable)
+* `dis`: weighted mean of distances to five Boston employment centers (predictor variable)
+* `rad`: index of accessibility to radial highways (predictor variable)
+* `tax`: full-value property-tax rate per $10,000 (predictor variable)
+* `ptratio`: pupil-teacher ratio by town (predictor variable)
+* `lstat`: lower status of the population (percent) (predictor variable)
+* `medv`: median value of owner-occupied homes in $1000s (predictor variable)
+* `target`: whether the crime rate is above the median crime rate (1) or not (0) (response variable)
+
+\clearpage
+
+### Deliverables
+
+* A write-up submitted in PDF format. Your write-up should have four sections. Each one is described below. You may assume you are addressing me as a fellow data scientist, so do not need to shy away from technical details.
+* Assigned prediction (probabilities, classifications) for the evaluation data set. Use a 0.5 threshold.
+* Include your R statistical programming code in an Appendix.
+
+### Task 1: Data Exploration
+
+**Describe the size and the variables in the crime training data set.**
+
+```{r, dataExploration, echo=FALSE}
+# Pull in the provided crime training and evaluation datasets.
+crime_training <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework%203/crime-training-data_modified.csv')
+crime_evaluation <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework%203/crime-evaluation-data_modified.csv')
+
+# Summarize the training dataset.
+summary(crime_training)
+```
+
+#### Boxplot
+
+```{r}
+#Boxplot
+long <- crime_training %>% as.data.frame() %>% melt()
+
+long %>%
+  ggplot(aes(x=value)) + geom_boxplot() + facet_wrap(~variable, scales = 'free')
+```
+#### Distibution
+
+```{r}
+mean_data <- long %>%  
+  group_by(variable) %>%
+  summarise(mean = mean(value))
+
+long %>%
+  ggplot(aes(x=value)) +
+  geom_histogram(color = 'black', fill = 'gray', bins = 30) +
+  geom_vline(data = mean_data, aes(xintercept = mean), linetype = 'dashed', color = 'blue') +
+  facet_wrap(~variable, scales = 'free')
+```
+
+
+#### Correlation
+
+```{r}
+temp_table <- cbind(crime_training[13], crime_training[1:12]) %>% data.frame()
+correlation_table <- cor(temp_table, method = 'pearson', use = 'complete.obs')[,1]
+
+
+correlation_table %>%
+  kable(caption = 'Correlation of Crime Rate Above Median') %>% kable_styling()
+```
+
+
+
+
+\clearpage
+
+**Check for missing values in the dataset.**
+
+```{r, dataExplorationVisulization, echo=FALSE}
+# Check for missing values using the Amelia package's missmap() function.
+missmap(crime_training, main = 'Missing Values Vs. Observed Values')
+```
+
+### Task 2: Data Preparation
+
+
+
+
+
+
+```{r}
+# Binning the data using the OneR library, bin function
+
+names <- c(1,2,3,4,5)
+training_set <- c()
+
+
+for (i in 1:ncol(crime_training)){
+  
+  # target and chas columns are binary and does not make sense to bin
+  if (!colnames(crime_training[i]) %in% c('target', 'chas')){
+  
+    training_set[i] <- OneR::bin(crime_training[i], nbins = 5, labels = names,
+                                    method = 'length')
+      
+  }else {
+    training_set[i] <- crime_training[i]
+  }
+}
+
+training_set <- data.frame(training_set)
+colnames(training_set) <- colnames(crime_training)
+summary(training_set)
+```
+
+
+
+### Task 3: Build Models
+
+Using the training data, build at least three different binary logistic regression models, using different variables (or the same variables with different transformations).
+
+
+```{r}
+#creating a logistic regression model using the training set
+glm.fit <- glm(target ~ ., data = training_set, family = binomial)
+```
+
+
+```{r}
+glm.probs <- predict(glm.fit, type = 'response')
+glm.pred <- ifelse(glm.probs > 0.5, 1, 0)
+
+training_set$pred <- glm.pred
+
+attach(training_set)
+table(glm.pred, target)
+mean(glm.pred == target)
+
+```
+
+
+### Task 4: Select Models
+
+Decide on the criteria for selecting the best binary logistic regression model.
+
+
+```{r}
+#convert the variables into factors as needed for the confusionMatrix
+training_set <- training_set %>%
+  mutate(pred = as.factor(pred),
+         target = as.factor(target))
+
+confusionMatrix(training_set$pred, training_set$target, positive = "1")
+
+caret::sensitivity(training_set$pred, training_set$target, positive = "1")
+caret::specificity(training_set$pred, training_set$target, negative = "0")
+caret::precision(training_set$pred, training_set$target, negative = "0")
+
+```
+
+
+### Appendix
