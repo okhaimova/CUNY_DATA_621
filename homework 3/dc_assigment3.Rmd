@@ -66,8 +66,8 @@ Your objective is to build a binary logistic regression model on the training da
 
 ```{r, dataExploration, echo=FALSE}
 # Pull in the provided crime training and evaluation datasets.
-crime_training <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework%203/crime-training-data_modified.csv')
-crime_evaluation <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework%203/crime-evaluation-data_modified.csv')
+training_set <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework%203/crime-training-data_modified.csv')
+evaluation_set <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework%203/crime-evaluation-data_modified.csv')
 
 # Summarize the training dataset.
 summary(crime_training)
@@ -77,7 +77,7 @@ summary(crime_training)
 
 ```{r}
 #Boxplot
-long <- crime_training %>% as.data.frame() %>% melt()
+long <- training_set %>% as.data.frame() %>% melt()
 
 long %>%
   ggplot(aes(x=value)) + geom_boxplot() + facet_wrap(~variable, scales = 'free')
@@ -100,8 +100,8 @@ long %>%
 #### Correlation
 
 ```{r}
-temp_table <- cbind(crime_training[13], crime_training[1:12]) %>% data.frame()
-correlation_table <- cor(temp_table, method = 'pearson', use = 'complete.obs')[,1]
+cor_table <- cbind(training_set[13], training_set[1:12]) %>% data.frame()
+correlation_table <- cor(cor_table, method = 'pearson', use = 'complete.obs')[,1]
 
 
 correlation_table %>%
@@ -117,7 +117,7 @@ correlation_table %>%
 
 ```{r, dataExplorationVisulization, echo=FALSE}
 # Check for missing values using the Amelia package's missmap() function.
-missmap(crime_training, main = 'Missing Values Vs. Observed Values')
+missmap(training_set, main = 'Missing Values Vs. Observed Values')
 ```
 
 ### Task 2: Data Preparation
@@ -131,25 +131,25 @@ missmap(crime_training, main = 'Missing Values Vs. Observed Values')
 # Binning the data using the OneR library, bin function
 
 names <- c(1,2,3,4,5,6,7,8,9,10)
-training_set <- c()
+dc_set <- c()
 
 
-for (i in 1:ncol(crime_training)){
+for (i in 1:ncol(training_set)){
   
   # target and chas columns are binary and does not make sense to bin
-  if (!colnames(crime_training[i]) %in% c('target', 'chas')){
+  if (!colnames(training_set[i]) %in% c('target', 'chas')){
   
-    training_set[i] <- OneR::bin(crime_training[i], nbins = 10, labels = names,
+    dc_set[i] <- OneR::bin(training_set[i], nbins = 10, labels = names,
                                     method = 'length')
       
   }else {
-    training_set[i] <- (crime_training[i])
+    dc_set[i] <- (training_set[i])
   }
 }
 
-training_set <- data.frame(training_set)
-colnames(training_set) <- colnames(crime_training)
-summary(training_set)
+dc_set <- data.frame(dc_set)
+colnames(dc_set) <- colnames(training_set)
+summary(dc_set)
 ```
 
 
@@ -161,19 +161,17 @@ Using the training data, build at least three different binary logistic regressi
 
 ```{r}
 #creating a logistic regression model using the training set
-glm.fit <- glm(target ~ ., data = training_set, family = binomial)
+glm.fit <- glm(target ~ ., data = dc_set, family = binomial)
 ```
 
 
 ```{r}
+# using the model to predict values on the dc_set
 glm.probs <- predict(glm.fit, type = 'response')
 glm.pred <- ifelse(glm.probs > 0.5, 1, 0)
 
-training_set$pred <- glm.pred
-
-attach(training_set)
-table(glm.pred, target)
-mean(glm.pred == target)
+# appending the predictions
+dc_set$pred <- glm.pred
 
 ```
 
@@ -183,18 +181,33 @@ mean(glm.pred == target)
 Decide on the criteria for selecting the best binary logistic regression model.
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 ```{r}
 #convert the variables into factors as needed for the confusionMatrix
-training_set <- training_set %>%
+dc_set <- dc_set %>%
   mutate(pred = as.factor(pred),
          target = as.factor(target))
 
-confusionMatrix(training_set$pred, training_set$target, positive = "1")
+confusionMatrix(dc_set$pred, dc_set$target, positive = "1")
 
-caret::sensitivity(training_set$pred, training_set$target, positive = "1")
-caret::specificity(training_set$pred, training_set$target, negative = "0")
-caret::precision(training_set$pred, training_set$target, negative = "0")
-#F1 score
+sens <- caret::sensitivity(dc_set$pred, dc_set$target, positive = "1")
+spec <- caret::specificity(dc_set$pred, dc_set$target, negative = "0")
+prec <- caret::precision(dc_set$pred, dc_set$target, negative = "0")
+
+
+f1_score <-   f1 <- 2 * sens * prec / (prec+sens)
+
 #AUC
 ```
 splitting training dataset
@@ -202,15 +215,15 @@ splitting training dataset
 
 ```{r}
 #75% of sample size
-smp_size <- floor(0.75 * nrow(training_set))
+smp_size <- floor(0.75 * nrow(dc_set))
 
 # sample rows from dataset
 set.seed(123)
-train_ind <- sample(seq_len(nrow(training_set)), size = smp_size)
+train_ind <- sample(seq_len(nrow(dc_set)), size = smp_size)
 
 # creating the train and test datasets
-train <- training_set[train_ind,]
-test <- training_set[-train_ind,]
+train <- dc_set[train_ind,]
+test <- dc_set[-train_ind,]
 
 # use training set to create model
 glm.fit2 <- glm(target ~ . , data = train, family = binomial)
@@ -225,4 +238,80 @@ mean(glm.pred == test$target)
 ```
 
 
+```{r}
+
+names <- c(1,2,3,4,5,6,7,8,9,10)
+dc_set2 <- c()
+
+
+for (i in 1:ncol(evaluation_set)){
+  
+  # target and chas columns are binary and does not make sense to bin
+  if (!colnames(evaluation_set[i]) %in% c('target', 'chas', 'zn')){
+  
+    dc_set2[i] <- OneR::bin(evaluation_set[i], nbins = 10, labels = names,
+                                    method = 'length')
+      
+  } else if(colnames(evaluation_set[i]) == 'zn'){
+    
+    
+    min_val <- min(evaluation_set[i])
+    max_val <- max(evaluation_set[i])
+    bin_size <- (max_val - min_val) / 10
+    
+    
+    b = c(min_val)
+    
+    for (j in 1:10){
+      b[j+1] <- min_val + bin_size * j
+    }
+    
+    dc_set2[i] <- (evaluation_set[i])
+    
+  } else {
+    dc_set2[i] <- (evaluation_set[i])
+    
+  }
+}
+
+dc_set2 <- data.frame(dc_set2)
+colnames(dc_set2) <- colnames(evaluation_set)
+
+
+dc_set2 <- dc_set2 %>%
+      mutate(
+        zn = ifelse(between(zn, b[1], b[2]), 1, 
+                   ifelse(between(zn, b[2], b[3]), 2,
+                   ifelse(between(zn, b[3], b[4]), 3,
+                   ifelse(between(zn, b[4], b[5]), 4,
+                   ifelse(between(zn, b[5], b[6]), 5,
+                   ifelse(between(zn, b[6], b[7]), 6,
+                   ifelse(between(zn, b[7], b[8]), 7,
+                   ifelse(between(zn, b[8], b[9]), 8,
+                   ifelse(between(zn, b[9], b[10]), 9,
+                   ifelse(between(zn, b[10], b[11]), 10, 11
+                     
+                   ))))))))))
+      )
+
+dc_set2$zn <- factor(dc_set2$zn, levels = names)
+
+summary(dc_set2)
+summary(dc_set)
+
+
+```
+
+
+Evaluation Dataset
+
+```{r}
+glm.prob2 <- predict(glm.fit2, newdata = dc_set2, type = 'response')
+glm.pred2 <- ifelse(glm.prob2 > 0.5, 1, 0)
+
+```
+
+
+
 ### Appendix
+
