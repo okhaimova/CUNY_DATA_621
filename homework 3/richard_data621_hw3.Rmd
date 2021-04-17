@@ -67,4 +67,12 @@ prediction_set
 
 ```
 
+# error calculations
 
+```{r}
+data = prediction_set %>%
+  mutate(richard_model = as.factor(richard_model),
+         target = as.factor(target))
+  
+confusionMatrix(data$richard_model,data$target)
+```
