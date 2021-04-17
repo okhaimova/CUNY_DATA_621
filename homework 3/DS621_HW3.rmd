@@ -62,18 +62,26 @@ Your objective is to build a binary logistic regression model on the training da
 
 **Describe the size and the variables in the crime training data set.**
 
-### Summary Statistics
-
-The first step in our data analysis is to compile summary statistics for each of the variables in the provided dataset.
-
 ```{r, dataExploration, echo=FALSE}
 # Pull in the provided crime training and evaluation datasets.
 training_set <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework%203/crime-training-data_modified.csv')
 evaluation_set <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework%203/crime-evaluation-data_modified.csv')
 
+# List the structure of the training dataset.
+str(training_set)
+```
+
+Based on the above data structure summary, the provided dataset consists of 13 variables and 466 observations.
+
+### Summary Statistics
+
+The first step in our data analysis is to compile summary statistics for each of the variables in the provided dataset. This will allow us to better understand the data prior to building our models.
+
+```{r, dataExplorationSummary, echo=FALSE}
 # Summarize the training dataset.
 summary(training_set)
 ```
+
 
 \clearpage
 
