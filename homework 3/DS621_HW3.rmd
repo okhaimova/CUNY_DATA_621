@@ -208,6 +208,7 @@ for (col in cols[1:col_size-1]) {
   plot = training_set %>%
     ggplot(aes_string(x = col, y = 'target')) +
     geom_point(stat = 'identity') +
+    theme(aspect.ratio = 4/12) + 
     labs(title = paste(col,'vs.','target'))
 
     print(plot)
@@ -406,7 +407,10 @@ summary(training_set)
 
 # Check for missing values using the Amelia package's missmap() function.
 missmap(training_set, main = 'Missing Values Vs. Observed Values')
+```
+\clearpage
 
+```
 # =====================================================================================
 # Distribution Plots
 # =====================================================================================
@@ -508,8 +512,11 @@ plot(fitted(model1), resid(model1), col = "grey", pch = 20,
 abline(h = 0, col = "darkorange", lwd = 2)
 qqnorm(resid(model1), main = "Normal Q-Q Plot", col = "darkgrey")
 qqline(resid(model1), col = "dodgerblue", lwd = 2)
+```
 
+\clearpage
 
+```
 # =====================================================================================
 # Model Three
 # =====================================================================================
@@ -560,7 +567,11 @@ predictions$model2 = to_binary(predict(model2,type ='response'),0.5)
 predictions$model3 = to_binary(predict(model3,type ='response'),0.5)
 predictions$model4 = to_binary(predict(model4,type ='response'),0.5)
 head(predictions)
+```
 
+\clearpage
+
+```
 
 # =====================================================================================
 # Error Calculations
