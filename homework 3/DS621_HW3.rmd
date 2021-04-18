@@ -72,7 +72,7 @@ str(training_set)
 ```
 
 Based on the above data structure summary, the provided dataset consists of 13 variables and 466 observations. With the exception of the
-"chas" variable (which is a dummy variable), all of the variables are numeric. 
+"chas" variable (which is a dummy variable), and the "target" variable, all of the variables are numeric. The target variable is a binary value with 1 indicating that a neighborhood's crime rate is above the average, and 0 indicating that it is below the average.
 
 ### Summary Statistics
 
@@ -83,6 +83,7 @@ The first step in our data analysis is to compile summary statistics for each of
 summary(training_set)
 ```
 
+Looking at the target variable in the above summary, we can see that around 49% of the neigborhoods in the study have above average crime rates. The summary also tells us that some of the variables may contain skewed distributions as they have means that are far from the median. The zn, and tax variables are examples of this observation.
 
 \clearpage
 
