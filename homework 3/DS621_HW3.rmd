@@ -155,6 +155,10 @@ predictor_vars_boxplots <- training_set %>% dplyr::select(-target) %>%
 print(predictor_vars_boxplots)
 ```
 
+\ 
+
+The boxplots show that some variables have a large amount of variance between each other (i.e. rad, tax, and zn). They also show significant outliers for some of the variables.
+
 \clearpage
 
 ## Task 2: Data Preparation
