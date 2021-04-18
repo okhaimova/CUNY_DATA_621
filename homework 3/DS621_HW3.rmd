@@ -75,7 +75,9 @@ str(training_set)
 \ 
 
 Based on the above data structure summary, the provided dataset consists of 13 variables and 466 observations. With the exception of the
-"chas" variable (which is a dummy variable), and the "target" variable, all of the variables are numeric. The target variable is a binary value with 1 indicating that a neighborhood's crime rate is above the average, and 0 indicating that it is below the average.
+"chas" variable (which is a dummy variable), and the "target" variable, all of the variables are numeric.
+
+The target variable is a binary value with 1 indicating that a neighborhood's crime rate is above the average, and 0 indicating that it is below the average.
 
 \clearpage
 
@@ -90,7 +92,9 @@ summary(training_set)
 
 \ 
 
-Looking at the target variable in the above summary, we can see that around 49% of the neigborhoods in the study have above average crime rates. The summary also tells us that some of the variables may contain skewed distributions as they have means that are far from the median. The zn, and tax variables are examples of this observation. We will verify whether this is the case or not in the "Distributions" section.
+Looking at the target variable in the above summary, we can see that around 49% of the neigborhoods in the study have above average crime rates.
+
+The summary also tells us that some of the variables may contain skewed distributions as they have means that are far from the median. The zn, and tax variables are examples of this observation. We will verify whether this is the case or not in the "Distributions" section.
 
 \clearpage
 
@@ -190,14 +194,23 @@ to radial highways (rad), and the full-value propety tax rate per $10,000 (tax) 
 means of distance to the five Boston employment centers (dis) variable is usually negatively correlated
 with the other variables.
 
+\clearpage
+
+### Variable Plots
+
+Scatter plots of each variable versus the target variable.
+
 ```{r scatterPlots, echo=FALSE}
-# scatter plots for each of the variables against the target
+# Scatter plots for each of the variables against the target.
 col_size = dim(training_set)[2]
 cols = names(training_set)
-for (col in cols[1:col_size-1]){
+for (col in cols[1:col_size-1]) {
   plot = training_set %>%
-    ggplot(aes_string(x = col,y = 'target'))+geom_point(stat = 'identity')+labs(title = paste(col,'Vs.','target'))
-  print(plot)
+    ggplot(aes_string(x = col, y = 'target')) +
+    geom_point(stat = 'identity') +
+    labs(title = paste(col,'vs.','target'))
+
+    print(plot)
 }
 
 ```
@@ -344,5 +357,232 @@ evaluation_set$predictions = to_binary(predict(model4, evaluation_set,type = 're
 head(evaluation_set)
 ```
 
+\clearpage
 
 ## Appendix
+
+```
+# =====================================================================================
+# Load Required Libraries 
+# =====================================================================================
+
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, include = TRUE)
+
+# Load required libraries.
+library(tidyverse)
+library(caret)
+library(pROC)
+library(grid)
+library(Amelia)
+library(ggplot2)
+library(kableExtra)
+library(corrplot)
+library(reshape2)
+
+
+# =====================================================================================
+# Load The Datasets and Look at the Structure of the Data
+# =====================================================================================
+
+# Pull in the provided crime training and evaluation datasets.
+training_set <- read.csv('CUNY_DATA_621/main/homework3/crime-training-data_modified.csv')
+evaluation_set <- read.csv('CUNY_DATA_621/main/homework3/crime-evaluation-data_modified.csv')
+
+# List the structure of the training dataset.
+str(training_set)
+
+
+# =====================================================================================
+# Summarize the Training Data
+# =====================================================================================
+
+# Summarize the training dataset.
+summary(training_set)
+
+
+# =====================================================================================
+# Check for Missing Values
+# =====================================================================================
+
+# Check for missing values using the Amelia package's missmap() function.
+missmap(training_set, main = 'Missing Values Vs. Observed Values')
+
+# =====================================================================================
+# Distribution Plots
+# =====================================================================================
+
+# Using the Dplyr package, massage the data by removing the target value prior
+# to plotting a histogram for each predictor variable.
+predictor_vars <- training_set %>% dplyr::select(-target) %>%
+  gather(key = 'predictor_variable', value = 'value')
+
+# Plot and print a histogram for each predictor variable.
+predictor_variables_plot <- ggplot(predictor_vars) +
+  geom_histogram(aes(x = value, y = ..density..), bins = 30, color = 'blue') +
+  labs(title = 'Distributions of Predictor Variables') +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_density(aes(x = value), color = 'red') +
+  facet_wrap(. ~predictor_variable, scales = 'free', ncol = 3)
+
+print(predictor_variables_plot)
+
+
+# =====================================================================================
+# Box Plots
+# =====================================================================================
+
+# Create box plots for each of the predictor variables.
+predictor_vars_boxplots <- training_set %>% dplyr::select(-target) %>%
+  gather(key = 'variable', value = 'value') %>%
+  ggplot(., aes(x = variable, y = value)) + 
+  geom_boxplot(fill = 'salmon', color = 'darkred') +
+  facet_wrap(~variable, scales = 'free', ncol = 4) +
+  labs(x = element_blank(), y = element_blank(), title = 'Box Plots of Predictor Variables') +
+  theme(plot.title = element_text(hjust = 0.5))
+
+print(predictor_vars_boxplots)
+
+# =====================================================================================
+# Data Correlation Table and Matrix Plot
+# =====================================================================================
+
+cor_table <- cbind(training_set[13], training_set[1:12]) %>% data.frame()
+correlation_table <- cor(cor_table, method = 'pearson', use = 'complete.obs')[,1]
+correlation_table %>%
+  kable(caption = 'Correlation of Crime Rate Above Median') %>% kable_styling(bootstrap_options = c("striped", "hover"))
+  
+correlation_matrix <- training_set
+correlation_matrix %>%
+  cor(.) %>%
+  corrplot(.,
+           title = 'Correlation Matrix of Training Set Predictor Variables',
+           method = 'color',
+           type = 'lower',
+           tl.col = 'black',
+           tl.srt = 45,
+           mar = c(0, 0, 2, 0))
+
+# =====================================================================================
+# Scatter Plots of Each Variable Versus the Target Variable
+# =====================================================================================
+
+# Scatter plots for each of the variables against the target.
+col_size = dim(training_set)[2]
+cols = names(training_set)
+for (col in cols[1:col_size-1]) {
+  plot = training_set %>%
+    ggplot(aes_string(x = col, y = 'target')) +
+    geom_point(stat = 'identity') +
+    labs(title = paste(col,'vs.','target'))
+
+    print(plot)
+}
+
+
+# =====================================================================================
+# Model One
+# =====================================================================================
+
+model1 <- glm(target ~  ., family = "binomial", data = training_set)
+
+summary(model1)
+
+plot(fitted(model1), resid(model1), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
+abline(h = 0, col = "darkorange", lwd = 2)
+qqnorm(resid(model1), main = "Normal Q-Q Plot", col = "darkgrey")
+qqline(resid(model1), col = "dodgerblue", lwd = 2)
+
+
+# =====================================================================================
+# Model Two
+# =====================================================================================
+
+model2 <- glm(target ~ zn + indus + chas + nox +  sqrt(age) + dis + rad + tax + ptratio + 
+                sqrt(lstat) + medv, family = "binomial", data = training_set)
+
+summary(model2)
+
+plot(fitted(model1), resid(model1), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
+abline(h = 0, col = "darkorange", lwd = 2)
+qqnorm(resid(model1), main = "Normal Q-Q Plot", col = "darkgrey")
+qqline(resid(model1), col = "dodgerblue", lwd = 2)
+
+
+# =====================================================================================
+# Model Three
+# =====================================================================================
+
+model3 <- glm(target ~ zn  + chas + nox +  sqrt(age) + dis + rad + tax + ptratio + 
+                 medv + I(rad/tax^2), family = "binomial", data = training_set)
+
+summary(model3)
+
+plot(fitted(model1), resid(model1), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
+abline(h = 0, col = "darkorange", lwd = 2)
+qqnorm(resid(model1), main = "Normal Q-Q Plot", col = "darkgrey")
+qqline(resid(model1), col = "dodgerblue", lwd = 2)
+
+
+# =====================================================================================
+# Model Four
+# =====================================================================================
+
+model4 = glm(target~.-chas,training_set,family = "binomial")
+
+summary(model4)
+
+
+# =====================================================================================
+# Model Selection
+# =====================================================================================
+
+# Function that creates a vector of binary values based on threshold.
+to_binary = function(arr,thresh) {
+  binary = c()
+  for (i in arr) {
+    if (i >= thresh) {
+      binary = c(binary, 1)
+    }
+    else {
+      binary = c(binary, 0)
+    }
+  }
+  return(binary)
+}
+
+# Predictions based on a threshhold of 0.5.
+predictions = training_set[c('target')]
+predictions$model1 = to_binary(predict(model1,type ='response'),0.5)
+predictions$model2 = to_binary(predict(model2,type ='response'),0.5)
+predictions$model3 = to_binary(predict(model3,type ='response'),0.5)
+predictions$model4 = to_binary(predict(model4,type ='response'),0.5)
+head(predictions)
+
+
+# =====================================================================================
+# Error Calculations
+# =====================================================================================
+
+predictions = predictions %>%
+  mutate(target = as.factor(target),
+         model1 = as.factor(model1),
+         model2 = as.factor(model2),
+         model3 = as.factor(model3),
+         model4 = as.factor(model4)
+         )
+
+# Model 1.
+confusionMatrix(predictions$model1,predictions$target)
+
+# Model 2.
+confusionMatrix(predictions$model2,predictions$target)
+
+# Model 3.
+confusionMatrix(predictions$model3,predictions$target)
+
+# Model 4.
+confusionMatrix(predictions$model4,predictions$target)
+```
