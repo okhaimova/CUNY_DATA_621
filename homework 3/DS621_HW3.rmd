@@ -170,7 +170,7 @@ correlation_table %>%
 ```
 
 
-```{r, dataPreperationTrainingDataCorrelation, echo=FALSE}
+```{r, trainingDataCorrelation, echo=FALSE}
 correlation_matrix <- training_set
 correlation_matrix %>%
   cor(.) %>%
@@ -196,26 +196,70 @@ with the other variables.
 
 **Describe how you have transformed the data by changing the original variables or creating new variables.**
 
-There are no missing values in the dataset so there is no need to impute values. Instead, we will split the training dataset (crime-training-data_modified.csv) into training and test sets using a 70/30 split respectively.
-
-```{r, dataPreperationSplitData, echo=FALSE}
-# Split the training data into training and test datasets using a 70/30 split ratio.
-training_index <- createDataPartition(training_set$target,
-                                      p = .7,
-                                      list = FALSE,
-                                      times = 1)
-
-# Define the training dataset.
-training_dataset <- training_set[training_index,]
-
-# Define the test dataset.
-test_dataset <- training_set[-training_index,]
-```
+There are no missing values in the dataset so there is no need to impute values. Variable transformations (such as log, square root, quadratic, inverse, etc) will be applied during model building.
 
 
 ## Task 3: Build Models
 
 Using the training data, build at least three different binary logistic regression models, using different variables (or the same variables with different transformations).
+
+#### Model 1
+
+This model uses all of the variables and acts as a guide to which variables need to be included, excluded, or transformed.
+The `nox` variable has the greatest affect on the target variable, but the coefficients do not make sense as the intercept is out of bounds.
+
+```{r modelOne, fig.show="hold", out.width="50%", echo=FALSE}
+model1 <- glm(target ~  ., family = "binomial", data = training_set)
+
+summary(model1)
+
+plot(fitted(model1), resid(model1), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
+abline(h = 0, col = "darkorange", lwd = 2)
+qqnorm(resid(model1), main = "Normal Q-Q Plot", col = "darkgrey")
+qqline(resid(model1), col = "dodgerblue", lwd = 2)
+```
+
+#### Model 2
+
+- Log/sqrt was applied to `age` and `lstat` as they were skewed.
+- `rm` was removed since it had a high p value.
+
+```{r modelTwo, fig.show = "hold", out.width="50%", echo=FALSE}
+model2 <- glm(target ~ zn + indus + chas + nox +  sqrt(age) + dis + rad + tax + ptratio + 
+                sqrt(lstat) + medv, family = "binomial", data = training_set)
+
+summary(model2)
+
+plot(fitted(model1), resid(model1), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
+abline(h = 0, col = "darkorange", lwd = 2)
+qqnorm(resid(model1), main = "Normal Q-Q Plot", col = "darkgrey")
+qqline(resid(model1), col = "dodgerblue", lwd = 2)
+```
+
+#### Model 3 
+
+- Log/sqrt was applied to `age` and `stat` as they were skewed.
+- `rm` was removed since it had a high p value.
+- `lstat` was removed due to high p value
+- ratio of `rad`/`tax`, the full value propety tax value squared per index of accessibility to radial highways
+- `indus` was removed 
+
+```{r modelThree, fig.show = "hold", out.width="50%", echo=FALSE}
+model3 <- glm(target ~ zn  + chas + nox +  sqrt(age) + dis + rad + tax + ptratio + 
+                 medv + I(rad/tax^2), family = "binomial", data = training_set)
+
+summary(model3)
+
+plot(fitted(model1), resid(model1), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
+abline(h = 0, col = "darkorange", lwd = 2)
+qqnorm(resid(model1), main = "Normal Q-Q Plot", col = "darkgrey")
+qqline(resid(model1), col = "dodgerblue", lwd = 2)
+```
+
+
 
 
 ## Task 4: Select Models
