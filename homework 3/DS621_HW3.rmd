@@ -27,6 +27,7 @@ library(Amelia)
 library(ggplot2)
 library(kableExtra)
 library(corrplot)
+library(reshape2)
 ```
 
 
@@ -71,6 +72,8 @@ evaluation_set <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DAT
 str(training_set)
 ```
 
+\ 
+
 Based on the above data structure summary, the provided dataset consists of 13 variables and 466 observations. With the exception of the
 "chas" variable (which is a dummy variable), and the "target" variable, all of the variables are numeric. The target variable is a binary value with 1 indicating that a neighborhood's crime rate is above the average, and 0 indicating that it is below the average.
 
@@ -85,7 +88,7 @@ The first step in our data analysis is to compile summary statistics for each of
 summary(training_set)
 ```
 
-
+\ 
 
 Looking at the target variable in the above summary, we can see that around 49% of the neigborhoods in the study have above average crime rates. The summary also tells us that some of the variables may contain skewed distributions as they have means that are far from the median. The zn, and tax variables are examples of this observation. We will verify whether this is the case or not in the "Distributions" section.
 
@@ -95,12 +98,14 @@ Looking at the target variable in the above summary, we can see that around 49% 
 
 Now that we have a better understanding of the dataset, we can move on to check for missing values in the data.
 
-```{r, dataExplorationVisulization, echo=FALSE}
+```{r, dataExplorationVisulization, fig.height = 10, fig.width = 10, echo = FALSE}
 # Check for missing values using the Amelia package's missmap() function.
 missmap(training_set, main = 'Missing Values Vs. Observed Values')
 ```
 
-As we can see from the below missingness map, there are no missing values and therefore we do not need to impute any of the values to account for this.
+\ 
+
+As we can see from the above missingness map, there are no missing values and therefore we do not need to impute any of the values to account for this.
 
 \clearpage
 
@@ -125,12 +130,32 @@ predictor_variables_plot <- ggplot(predictor_vars) +
 print(predictor_variables_plot)
 ```
 
+\ 
+
 Looking at the above distribution plots, we observe that there are a lot of skewed variables. Specifcally, the "age", and "ptratio" variables are left skewed whilst the "dis", "lstat", "nox", and "zn" variables are right skewed. The "chas" variable is a binary variable and therefore we only see values for 0.00 and 1.00.
 
 \clearpage
 
-### Boxplots
+### Box Plots
 
+We used box plots to provide a visual insight into the spread of each predictor variable.
+
+\ 
+
+```{r, boxPlots, fig.height = 10, fig.width = 10, echo = FALSE}
+# Create box plots for each of the predictor variables.
+predictor_vars_boxplots <- training_set %>% dplyr::select(-target) %>%
+  gather(key = 'variable', value = 'value') %>%
+  ggplot(., aes(x = variable, y = value)) + 
+  geom_boxplot(fill = 'salmon', color = 'darkred') +
+  facet_wrap(~variable, scales = 'free', ncol = 4) +
+  labs(x = element_blank(), y = element_blank(), title = 'Box Plots of Predictor Variables') +
+  theme(plot.title = element_text(hjust = 0.5))
+
+print(predictor_vars_boxplots)
+```
+
+\clearpage
 
 ## Task 2: Data Preparation
 
