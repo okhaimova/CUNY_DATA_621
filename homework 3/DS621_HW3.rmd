@@ -76,7 +76,8 @@ str(training_set)
 \ 
 
 Based on the above data structure summary, the provided dataset consists of 13 variables and 466 observations. With the exception of the
-"chas" variable (which is a dummy variable), and the "target" variable, all of the variables are numeric. The target variable is a binary value with 1 indicating that a neighborhood's crime rate is above the median, and 0 indicating that it is below the median.
+`chas` variable (which is a dummy variable), and the `target` variable, all of the variables are numeric. The target variable is a binary 
+value with 1 indicating that a neighborhood's crime rate is above the median, and 0 indicating that it is below the median.
 
 \clearpage
 
@@ -91,7 +92,10 @@ summary(training_set)
 
 \ 
 
+
 Looking at the `target` variable in the above summary, we can see that around 49% of the neighborhoods in the study have above median crime rates. The summary also tells us that some of the variables may contain skewed distributions as they have means that are far from the median. The `zn` and `tax` variables are examples of this observation. We will verify whether this is the case or not in the "Distributions" section.
+The summary also tells us that some of the variables may contain skewed distributions as they have means that are far from the median. The `zn` and `tax` variables are examples of this observation. We will verify whether this is the case or not in the "Distributions" section.
+
 
 \clearpage
 
@@ -193,20 +197,28 @@ correlation_matrix %>%
 According to the correlation table and plot above, there is a high correlation between the accessibility
 to radial highways (`rad`), and the full-value property tax rate per $10,000 (`tax`) predictor variables. Additionally, the weighted 
 means of distance to the five Boston employment centers (`dis`) variable is usually negatively correlated
+
 with the other variables.
 
 \clearpage
 
-### Scatterplots
 
-```{r, fig.show = "hold", out.width="33%", echo=FALSE}
-# scatter plots for each of the variables against the target
+### Variable Plots
+
+Scatter plots of each variable versus the target variable.
+
+```{r scatterPlots,fig.show = "hold", out.width="33%", echo=FALSE}
+# Scatter plots for each of the variables against the target.
 col_size = dim(training_set)[2]
 cols = names(training_set)
-for (col in cols[1:col_size-1]){
+for (col in cols[1:col_size-1]) {
   plot = training_set %>%
-    ggplot(aes_string(x = col,y = 'target'))+geom_point(stat = 'identity')+labs(title = paste(col,'Vs.','target'))
-  print(plot)
+    ggplot(aes_string(x = col, y = 'target')) +
+    geom_point(stat = 'identity') +
+    theme(aspect.ratio = 4/12) + 
+    labs(title = paste(col,'vs.','target'))
+
+    print(plot)
 }
 
 ```
@@ -263,7 +275,7 @@ qqline(resid(model2), col = "dodgerblue", lwd = 2)
 - Log/sqrt was applied to `age` and `stat` as they were skewed.
 - `rm` was removed since it had a high p value.
 - `lstat` was removed due to high p value
-- ratio of `rad`/`tax`, the full value propety tax value squared per index of accessibility to radial highways
+- ratio of `rad`/`tax`, the full value property tax value squared per index of accessibility to radial highways
 - `indus` was removed 
 
 ```{r modelThree, fig.show = "hold", out.width="50%", echo=FALSE}
@@ -283,7 +295,7 @@ qqline(resid(model3), col = "dodgerblue", lwd = 2)
 
 - remove `chas` variable because it is a binary variable
 
-```{r}
+```{r chasVariableRemove,  echo=FALSE}
 model4 = glm(target~.-chas,training_set,family = "binomial")
 
 summary(model4)
@@ -301,21 +313,23 @@ qqline(resid(model4), col = "dodgerblue", lwd = 2)
 
 Decide on the criteria for selecting the best binary logistic regression model.
 
-```{r}
-# function that creates a vector of binary values based on threshold
+```{r binaryLogic, echo=FALSE}
+# Function that creates a vector of binary values based on threshold.
 to_binary=function(arr,thresh){
   binary = c()
-  for (i in arr){
-    if (i >= thresh){
-      binary = c(binary,1)
-    }else{
-      binary = c(binary,0)
+  for (i in arr) {
+    if (i >= thresh) {
+      binary = c(binary, 1)
+    }
+    else {
+      binary = c(binary, 0)
     }
   }
   return(binary)
 }
 
-# predictions based on a threshold of 0.5
+
+# Predictions based on a threshhold of 0.5.
 predictions = training_set[c('target')]
 predictions$model1 = to_binary(predict(model1,type ='response'),0.5)
 predictions$model2 = to_binary(predict(model2,type ='response'),0.5)
@@ -324,9 +338,11 @@ predictions$model4 = to_binary(predict(model4,type ='response'),0.5)
 
 ```
 
+
 ### Error Calculations
 
-```{r}
+```{r predictionsOne, echo=FALSE}
+
 predictions = predictions %>%
   mutate(target = as.factor(target),
          model1 = as.factor(model1),
@@ -338,29 +354,31 @@ predictions = predictions %>%
 
 ### Model 1 Confusion Matrix
 
+
 ```{r, echo = FALSE}
-# model 1
+# Model 1.
 confusionMatrix(predictions$model1,predictions$target)
 ```
 
 ### Model 2 Confusion Matrix
 
 ```{r, echo = FALSE}
-# model 2
+# Model 2.
 confusionMatrix(predictions$model2,predictions$target)
 ```
 
 ### Model 3 Confusion Matrix
 
 ```{r, echo = FALSE}
-# model 3
+# Model 3.
 confusionMatrix(predictions$model3,predictions$target)
 ```
 
 ### Model 4 Confusion Matrix
 
+
 ```{r, echo = FALSE}
-# model 4
+# Model 4.
 confusionMatrix(predictions$model4,predictions$target)
 ```
 \clearpage
@@ -480,13 +498,14 @@ model_comparison <- rbind(acc, class_error, prec, spec, sens, f1, a_u_c) %>%
 
 ```
 
+
 ### Model of Choice
 
 Since Model 4 has the highest sensitivity rate we will be picking that model to predict on the evaluation set. 
 This means that it has the smallest false negative rate.
 
-```{r, echo = FALSE}
-evaluation_set$predictions = to_binary(predict(model4, evaluation_set,type = 'response'),0.5)
+```{r predictionsTwo, echo=FALSE}
+evaluation_set$predictions = to_binary(predict(model4, evaluation_set,type = 'response'), 0.5)
 
 head(evaluation_set)
 ```
@@ -494,3 +513,361 @@ head(evaluation_set)
 \clearpage
 
 ## Appendix
+
+```
+# =====================================================================================
+# Load Required Libraries 
+# =====================================================================================
+
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, include = TRUE)
+
+# Load required libraries.
+library(tidyverse)
+library(caret)
+library(pROC)
+library(grid)
+library(Amelia)
+library(ggplot2)
+library(kableExtra)
+library(corrplot)
+library(reshape2)
+
+
+# =====================================================================================
+# Load The Datasets and Look at the Structure of the Data
+# =====================================================================================
+
+# Pull in the provided crime training and evaluation datasets.
+training_set <- read.csv('CUNY_DATA_621/main/homework3/crime-training-data_modified.csv')
+evaluation_set <- read.csv('CUNY_DATA_621/main/homework3/crime-evaluation-data_modified.csv')
+
+# List the structure of the training dataset.
+str(training_set)
+
+
+# =====================================================================================
+# Summarize the Training Data
+# =====================================================================================
+
+# Summarize the training dataset.
+summary(training_set)
+
+
+# =====================================================================================
+# Check for Missing Values
+# =====================================================================================
+
+# Check for missing values using the Amelia package's missmap() function.
+missmap(training_set, main = 'Missing Values Vs. Observed Values')
+```
+\clearpage
+
+```
+# =====================================================================================
+# Distribution Plots
+# =====================================================================================
+
+# Using the Dplyr package, massage the data by removing the target value prior
+# to plotting a histogram for each predictor variable.
+predictor_vars <- training_set %>% dplyr::select(-target) %>%
+  gather(key = 'predictor_variable', value = 'value')
+
+# Plot and print a histogram for each predictor variable.
+predictor_variables_plot <- ggplot(predictor_vars) +
+  geom_histogram(aes(x = value, y = ..density..), bins = 30, color = 'blue') +
+  labs(title = 'Distributions of Predictor Variables') +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_density(aes(x = value), color = 'red') +
+  facet_wrap(. ~predictor_variable, scales = 'free', ncol = 3)
+
+print(predictor_variables_plot)
+
+
+# =====================================================================================
+# Box Plots
+# =====================================================================================
+
+# Create box plots for each of the predictor variables.
+predictor_vars_boxplots <- training_set %>% dplyr::select(-target) %>%
+  gather(key = 'variable', value = 'value') %>%
+  ggplot(., aes(x = variable, y = value)) + 
+  geom_boxplot(fill = 'salmon', color = 'darkred') +
+  facet_wrap(~variable, scales = 'free', ncol = 4) +
+  labs(x = element_blank(), y = element_blank(), title = 'Box Plots of Predictor Variables') +
+  theme(plot.title = element_text(hjust = 0.5))
+
+print(predictor_vars_boxplots)
+
+# =====================================================================================
+# Data Correlation Table and Matrix Plot
+# =====================================================================================
+
+cor_table <- cbind(training_set[13], training_set[1:12]) %>% data.frame()
+correlation_table <- cor(cor_table, method = 'pearson', use = 'complete.obs')[,1]
+correlation_table %>%
+  kable(caption = 'Correlation of Crime Rate Above Median') %>% kable_styling(bootstrap_options = c("striped", "hover"))
+  
+correlation_matrix <- training_set
+correlation_matrix %>%
+  cor(.) %>%
+  corrplot(.,
+           title = 'Correlation Matrix of Training Set Predictor Variables',
+           method = 'color',
+           type = 'lower',
+           tl.col = 'black',
+           tl.srt = 45,
+           mar = c(0, 0, 2, 0))
+
+# =====================================================================================
+# Scatter Plots of Each Variable Versus the Target Variable
+# =====================================================================================
+
+# Scatter plots for each of the variables against the target.
+col_size = dim(training_set)[2]
+cols = names(training_set)
+for (col in cols[1:col_size-1]) {
+  plot = training_set %>%
+    ggplot(aes_string(x = col, y = 'target')) +
+    geom_point(stat = 'identity') +
+    labs(title = paste(col,'vs.','target'))
+
+    print(plot)
+}
+
+
+# =====================================================================================
+# Model One
+# =====================================================================================
+
+model1 <- glm(target ~  ., family = "binomial", data = training_set)
+
+summary(model1)
+
+plot(fitted(model1), resid(model1), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
+abline(h = 0, col = "darkorange", lwd = 2)
+qqnorm(resid(model1), main = "Normal Q-Q Plot", col = "darkgrey")
+qqline(resid(model1), col = "dodgerblue", lwd = 2)
+
+
+# =====================================================================================
+# Model Two
+# =====================================================================================
+
+model2 <- glm(target ~ zn + indus + chas + nox +  sqrt(age) + dis + rad + tax + ptratio + 
+                sqrt(lstat) + medv, family = "binomial", data = training_set)
+
+summary(model2)
+
+plot(fitted(model1), resid(model1), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
+abline(h = 0, col = "darkorange", lwd = 2)
+qqnorm(resid(model1), main = "Normal Q-Q Plot", col = "darkgrey")
+qqline(resid(model1), col = "dodgerblue", lwd = 2)
+```
+
+\clearpage
+
+```
+# =====================================================================================
+# Model Three
+# =====================================================================================
+
+model3 <- glm(target ~ zn  + chas + nox +  sqrt(age) + dis + rad + tax + ptratio + 
+                 medv + I(rad/tax^2), family = "binomial", data = training_set)
+
+summary(model3)
+
+plot(fitted(model1), resid(model1), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
+abline(h = 0, col = "darkorange", lwd = 2)
+qqnorm(resid(model1), main = "Normal Q-Q Plot", col = "darkgrey")
+qqline(resid(model1), col = "dodgerblue", lwd = 2)
+
+
+# =====================================================================================
+# Model Four
+# =====================================================================================
+
+model4 = glm(target~.-chas,training_set,family = "binomial")
+
+summary(model4)
+
+
+# =====================================================================================
+# Model Selection
+# =====================================================================================
+
+# Function that creates a vector of binary values based on threshold.
+to_binary = function(arr,thresh) {
+  binary = c()
+  for (i in arr) {
+    if (i >= thresh) {
+      binary = c(binary, 1)
+    }
+    else {
+      binary = c(binary, 0)
+    }
+  }
+  return(binary)
+}
+
+# Predictions based on a threshhold of 0.5.
+predictions = training_set[c('target')]
+predictions$model1 = to_binary(predict(model1,type ='response'),0.5)
+predictions$model2 = to_binary(predict(model2,type ='response'),0.5)
+predictions$model3 = to_binary(predict(model3,type ='response'),0.5)
+predictions$model4 = to_binary(predict(model4,type ='response'),0.5)
+head(predictions)
+```
+
+\clearpage
+
+```
+
+# =====================================================================================
+# Error Calculations
+# =====================================================================================
+
+predictions = predictions %>%
+  mutate(target = as.factor(target),
+         model1 = as.factor(model1),
+         model2 = as.factor(model2),
+         model3 = as.factor(model3),
+         model4 = as.factor(model4)
+         )
+
+# Model 1.
+confusionMatrix(predictions$model1,predictions$target)
+
+# Model 2.
+confusionMatrix(predictions$model2,predictions$target)
+
+# Model 3.
+confusionMatrix(predictions$model3,predictions$target)
+
+# Model 4.
+confusionMatrix(predictions$model4,predictions$target)
+```
+
+# =====================================================================================
+# Model Comparison
+# =====================================================================================
+
+\clearpage
+
+### Model Comparison
+
+```{r, echo = FALSE, message= FALSE}
+accuracy <- function(df,col1,col2) {
+  true = df[,col1]
+  predict = df[,col2]
+  # total events
+  len = length(true)
+  # total correct predictions
+  correct = 0
+  for (i in seq(len)){
+    if (true[i] == predict[i]){
+      correct = correct + 1
+    }
+  }
+  # accuracy
+  return (correct/len)
+}
+
+class_error_rate <- function(df,col1,col2) {
+  true = df[,col1]
+  predict = df[,col2]
+  # total events
+  len = length(true)
+  # total errors
+  error = 0
+  for (i in seq(len)){
+    if (true[i] != predict[i]){
+      error = error + 1
+    }
+  }
+  # error rate
+  return (error/len)
+}
+
+precision <- function(col1, col2) {
+  # Calculate the total number of true positives in the dataset.
+  true_positive <- sum(col1 == 1 & col2 == 1)
+  # Calculate the total number of false positives in the dataset.
+  false_positive <- sum(col1 == 0 & col2 == 1)
+  # Perform the precision calculation and round the result to 2 decimal places.
+  prediction_precision <- true_positive / (true_positive + false_positive)
+  return(prediction_precision)
+}
+
+
+sensitivity <- function(col1, col2) {
+  
+  true_positive <- sum(col1 == 1 & col2 == 1)
+  false_negative <- sum(col1 == 1 & col2 == 0)
+  
+  sensitivity<- true_positive / (true_positive + false_negative)
+   
+  return(sensitivity)
+} 
+
+specificity <- function(col1, col2) {
+  
+  true_negative <- sum(col2 == 0 & col1 == 0)
+  false_positive <- sum(col2 == 1 & col1 == 0)
+  
+  specificity <- true_negative / (true_negative + false_positive) 
+  
+  return(specificity)
+}
+
+f1_score <- function(col1, col2) {
+  sens <- sensitivity(col1, col2)
+  prec <- precision(col1, col2)
+  f1 <- 2 * sens * prec / (prec+sens)
+  return(f1)
+}
+
+roc_model1 <- roc(predictions$target, as.numeric(predictions$model1))
+roc_model2 <- roc(predictions$target, as.numeric(predictions$model2))
+roc_model3 <- roc(predictions$target, as.numeric(predictions$model3))
+roc_model4 <- roc(predictions$target, as.numeric(predictions$model4))
+
+
+#accuracy
+acc <- c(accuracy(predictions,'target','model1'), accuracy(predictions,'target','model2'),
+         accuracy(predictions,'target','model3'), accuracy(predictions,'target','model4'))
+
+#classification error rate
+class_error <- c(class_error_rate(predictions,'target','model1'), class_error_rate(predictions,'target','model2'),
+                 class_error_rate(predictions,'target','model3'), class_error_rate(predictions,'target','model4'))
+
+#precision
+prec <- c(precision(predictions$target, predictions$model1), precision(predictions$target, predictions$model2),
+          precision(predictions$target, predictions$model3), precision(predictions$target, predictions$model4))
+
+#specificity
+spec <- c(specificity(predictions$target, predictions$model1), specificity(predictions$target, predictions$model2),
+          specificity(predictions$target, predictions$model3), specificity(predictions$target, predictions$model4))
+
+#sensitivity
+sens <- c(sensitivity(predictions$target, predictions$model1), sensitivity(predictions$target, predictions$model2),
+          sensitivity(predictions$target, predictions$model3), sensitivity(predictions$target, predictions$model4))
+
+#f1 score
+f1 <- c(f1_score(predictions$target, predictions$model1), f1_score(predictions$target, predictions$model2), 
+        f1_score(predictions$target, predictions$model3), f1_score(predictions$target, predictions$model4))
+
+#AUC
+a_u_c <- c(auc(roc_model1), auc(roc_model2), auc(roc_model3), auc(roc_model4))
+
+model_comparison <- rbind(acc, class_error, prec, spec, sens, f1, a_u_c) %>%
+  as.data.frame() %>%
+  set_rownames(c('accuracy', 'classification error rate', 'precision', 'sensitivity', 
+                 'specificity', 'F1 score', 'AUC')) %>%
+  set_colnames(c('Model 1', 'Model 2', 'Model 3', 'Model 4')) %>%
+  round(., 4)
+
+
+```
