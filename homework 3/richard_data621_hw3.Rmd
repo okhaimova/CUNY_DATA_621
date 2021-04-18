@@ -9,6 +9,7 @@ output: html_document
 
 ```{r}
 library(tidyverse)
+library(caret)
 ```
 
 # loading data
@@ -34,7 +35,7 @@ col_size = dim(training_set)[2]
 # scatter plots
 
 ```{r}
-cols = names(data)
+cols = names(training_set)
 for (col in cols[1:col_size-1]){
   plot = training_set %>%
     ggplot(aes_string(x = col,y = 'target'))+geom_point(stat = 'identity')+labs(title = paste(col,'Vs.','target'))
@@ -76,3 +77,5 @@ data = prediction_set %>%
   
 confusionMatrix(data$richard_model,data$target)
 ```
+
+
