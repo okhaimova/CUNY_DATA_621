@@ -308,7 +308,8 @@ predictions$model4 = to_binary(predict(model4,type ='response'),0.5)
 head(predictions)
 
 ```
-# error calculations
+
+#### error calculations
 
 ```{r}
 predictions = predictions%>%
@@ -333,7 +334,7 @@ confusionMatrix(predictions$model4,predictions$target)
 
 ```
 
-# since model 4 has the highest sensitvity (low false negative) rate we will be picking that model to predict on the evaluation set
+#### since model 4 has the highest sensitvity (low false negative) rate we will be picking that model to predict on the evaluation set
 
 ```{r}
 evaluation_set$predictions = to_binary(predict(model4, evaluation_set,type = 'response'),0.5)
