@@ -284,7 +284,7 @@ model3 <- glm(target ~ zn  + chas + nox +  sqrt(age) + dis + rad + tax + ptratio
 
 summary(model3)
 
-plot(fitted(model3), resid(model13), col = "grey", pch = 20,
+plot(fitted(model3), resid(model3), col = "grey", pch = 20,
      xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
 abline(h = 0, col = "darkorange", lwd = 2)
 qqnorm(resid(model3), main = "Normal Q-Q Plot", col = "darkgrey")
@@ -491,9 +491,9 @@ a_u_c <- c(auc(roc_model1), auc(roc_model2), auc(roc_model3), auc(roc_model4))
 
 model_comparison <- rbind(acc, class_error, prec, spec, sens, f1, a_u_c) %>%
   as.data.frame() %>%
-  set_rownames(c('accuracy', 'classification error rate', 'precision', 'sensitivity', 
+  magrittr::set_rownames(c('accuracy', 'classification error rate', 'precision', 'sensitivity', 
                  'specificity', 'F1 score', 'AUC')) %>%
-  set_colnames(c('Model 1', 'Model 2', 'Model 3', 'Model 4')) %>%
+  magrittr::set_colnames(c('Model 1', 'Model 2', 'Model 3', 'Model 4')) %>%
   round(., 4)
 
 ```
