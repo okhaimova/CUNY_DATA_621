@@ -751,6 +751,10 @@ confusionMatrix(predictions$model3,predictions$target)
 confusionMatrix(predictions$model4,predictions$target)
 ```
 
+\clearpage
+
+```
+
 # =====================================================================================
 # Model Comparison
 # =====================================================================================
