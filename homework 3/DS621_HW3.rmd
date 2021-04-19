@@ -496,6 +496,7 @@ model_comparison <- rbind(acc, class_error, prec, spec, sens, f1, a_u_c) %>%
   magrittr::set_colnames(c('Model 1', 'Model 2', 'Model 3', 'Model 4')) %>%
   round(., 4)
 
+model_comparison
 ```
 
 
