@@ -1,0 +1,122 @@
+---
+title: "dc_assign4"
+author: "Diego Correa"
+date: "5/1/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(caret)
+library(pROC)
+library(grid)
+library(Amelia)
+library(ggplot2)
+library(kableExtra)
+library(corrplot)
+library(reshape2)
+library(e1071)
+library(visdat)
+library(MASS)
+```
+
+## 
+
+```{r cars}
+training_set <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework_4/insurance_training_data.csv')
+evaluation_set <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework_4/insurance-evaluation-data.csv')
+```
+
+```{r}
+training_set$INCOME <- as.numeric(gsub("[\\$,]", "", training_set$INCOME))
+training_set$HOME_VAL <- as.numeric(gsub("[\\$,]", "", training_set$HOME_VAL))
+training_set$BLUEBOOK <- as.numeric(gsub("[\\$,]", "", training_set$BLUEBOOK))
+training_set$OLDCLAIM <- as.numeric(gsub("[\\$,]", "", training_set$OLDCLAIM))
+
+# Convert spaces to underscores in the EDUCATION, JOB, CAR_TYPE, and URBANICITY columns.
+training_set$EDUCATION <- gsub(" ", "_", training_set$EDUCATION)
+training_set$JOB <- gsub(' ', '_', training_set$JOB)
+training_set$CAR_TYPE <- gsub(' ', '_', training_set$CAR_TYPE) 
+training_set$URBANICITY <- gsub(' ', '_', training_set$URBANICITY)
+
+# Remove '<', and 'z_' characters from the MSTATUS, SEX, EDUCATION, JOB, CAR_TYPE, and URBANICITY columns.  
+training_set$MSTATUS <- gsub("[<,z_]", "", training_set$MSTATUS)
+training_set$SEX <- gsub("[<,z_]", "", training_set$SEX)
+training_set$EDUCATION <- gsub("[<,z_]", "", training_set$EDUCATION)
+training_set$JOB <- gsub("[<,z_]", "", training_set$JOB)
+training_set$CAR_TYPE <- gsub("[<,z_]", "", training_set$CAR_TYPE) 
+training_set$URBANICITY <- gsub("[<,z_]", "", training_set$URBANICITY)
+
+training_set <- training_set[-1]
+
+str(training_set)
+```
+
+## Linear Model 2
+
+Selecting rows that indicates there was a crash (TARGET_FLAG = 1) and omitting the rows with missing data.
+
+```{r pressure, echo=FALSE}
+lm2 <- lm(TARGET_AMT ~ . -TARGET_FLAG, data = training_set %>% filter(TARGET_FLAG == 1) %>% drop_na())
+
+model_two <- stepAIC(lm2, direction = 'both', trace = FALSE)
+
+summary(model_two)
+```
+
+
+
+
+
+```{r}
+ggplot(data = model_two, aes(x = .fitted, y = .resid)) +
+  geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_smooth(se = FALSE) + xlab("Fitted values") + ylab("Residuals")
+
+ggplot(data = model_two, aes(x = .resid)) + geom_histogram() + xlab("Residuals")
+
+ggplot(data = model_two) + stat_qq(aes(sample = .stdresid)) + geom_abline()
+```
+
+## Boxcox method
+
+
+```{r}
+b <- boxcox(TARGET_AMT ~ . -TARGET_FLAG, data = training_set %>% filter(TARGET_FLAG == 1))
+```
+
+
+
+
+```{r}
+lamda <- b$x
+lik <- b$y
+bc <- cbind(lamda, lik)
+l <- bc[order(-lik),][1,1]
+
+lm3 <- lm(TARGET_AMT^(l) ~ . -TARGET_FLAG, data = training_set %>% filter(TARGET_FLAG == 1))
+
+summary(lm3)
+```
+
+```{r}
+ggplot(data = model_three, aes(x = .fitted, y = .resid)) +
+  geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_smooth(se = FALSE) + xlab("Fitted values") + ylab("Residuals")
+
+ggplot(data = model_three, aes(x = .resid)) + geom_histogram() + xlab("Residuals")
+
+ggplot(data = model_three) + stat_qq(aes(sample = .stdresid)) + geom_abline()
+```
+
+
+Based on the residual analysis, using the Boxcox method to create a linear model for the Target amount is better than using the AIC step-wise method.
+
+
+
+
+
+
+
+
+
