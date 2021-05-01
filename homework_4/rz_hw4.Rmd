@@ -1,0 +1,113 @@
+---
+title: "hw4"
+author: "Richard"
+date: "5/1/2021"
+output: html_document
+---
+
+# packages
+
+```{r}
+library(tidyverse)
+library(caret)
+```
+
+```{r, dataExploration, echo=FALSE}
+# Pull in the provided insurance training and evaluation datasets.
+training_set <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework_4/insurance_training_data.csv')
+evaluation_set <- read.csv('./insurance-evaluation-data.csv')
+# Explore the structure of the training dataset.
+str(training_set)
+# Remove the INDEX colunmn as it is of no value.
+training_set <- training_set[,setdiff(colnames(training_set), 'INDEX')]
+dim(training_set)
+
+```
+
+\ 
+
+Todo: Observation text goes here.
+
+\clearpage
+
+### Data Transformation
+
+As we can see from the above table, The training dataset contains characters that will hinder our calculations so we need to remove or transform these. We will remove dollar signs from the INCOME, HOME_VAL, BLUEBOOK, and OLDCLAIM columns, and transform spaces to underscores in the EDUCATION, JOB, CAR_TYPE, URBANICITY columns.  
+
+```{r, dataExplorationTransformation, echo=FALSE}
+# Remove dollar signs from the INCOME, HOME_VAL, BLUEBOOK, and OLDCLAIM columns by replacing them with empty strings.
+training_set$INCOME <- as.numeric(gsub("[\\$,]", "", training_set$INCOME))
+training_set$HOME_VAL <- as.numeric(gsub("[\\$,]", "", training_set$HOME_VAL))
+training_set$BLUEBOOK <- as.numeric(gsub("[\\$,]", "", training_set$BLUEBOOK))
+training_set$OLDCLAIM <- as.numeric(gsub("[\\$,]", "", training_set$OLDCLAIM))
+# Convert spaces to underscores in the EDUCATION, JOB, CAR_TYPE, and URBANICITY columns.
+training_set$EDUCATION <- gsub(" ", "_", training_set$EDUCATION)
+training_set$JOB <- gsub(' ', '_', training_set$JOB)
+training_set$CAR_TYPE <- gsub(' ', '_', training_set$CAR_TYPE) 
+training_set$URBANICITY <- gsub(' ', '_', training_set$URBANICITY)
+# Remove '<', and 'z_' characters from the MSTATUS, SEX, EDUCATION, JOB, CAR_TYPE, and URBANICITY columns.  
+training_set$MSTATUS <- gsub("[<,z_]", "", training_set$MSTATUS)
+training_set$SEX <- gsub("[<,z_]", "", training_set$SEX)
+training_set$EDUCATION <- gsub("[<,z_]", "", training_set$EDUCATION)
+training_set$JOB <- gsub("[<,z_]", "", training_set$JOB)
+training_set$CAR_TYPE <- gsub("[<,z_]", "", training_set$CAR_TYPE) 
+training_set$URBANICITY <- gsub("[<,z_]", "", training_set$URBANICITY)
+# remove NA's
+training_set = na.omit(training_set)
+```
+
+# scatter plots
+
+```{r scatterPlots,fig.show = "hold", out.width="33%", echo=FALSE}
+# Scatter plots for each of the variables against the target.
+col_size = dim(training_set)[2]
+cols = names(training_set)
+for (col in cols[3:col_size]) {
+  plot = training_set %>%
+    ggplot(aes_string(x = col, y = 'TARGET_FLAG')) +
+    geom_point(stat = 'identity') +
+    labs(title = paste(col,'vs.','TARGET_FLAG'))
+    print(plot)
+}
+
+training_set
+```
+
+```{r}
+to_binary=function(arr,thresh){
+  binary = c()
+  for (i in arr) {
+    if (i >= thresh) {
+      binary = c(binary, 1)
+    }
+    else {
+      binary = c(binary, 0)
+    }
+  }
+  return(binary)
+}
+
+str(training_set)
+```
+
+
+# model (richard)
+
+
+#### remove various predictors
+
+
+
+```{r}
+m1 = glm(TARGET_FLAG~.-TARGET_AMT-BLUEBOOK-CAR_AGE,training_set,family ='binomial')
+
+classification = training_set[c('TARGET_FLAG')]
+classification$model1 = to_binary(predict(m1,type = 'response'),0.5)
+
+classification = classification %>%
+  mutate(TARGET_FLAG = as.factor(TARGET_FLAG),
+         model1 = as.factor(model1)
+         )
+confusionMatrix(classification$model1,classification$TARGET_FLAG)
+```
+
