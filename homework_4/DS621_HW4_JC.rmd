@@ -1,0 +1,211 @@
+---
+title: "DS621_HW4_JC"
+author: "Group 2"
+date: "4/28/2021"
+output:  pdf_document:
+    toc: yes
+    toc_depth: 3
+  html_document:
+    df_print: paged
+    toc: yes
+---
+
+**Group 2 members:** _Diego Correa, Jagdish Chhabria, Orli Khaimova, Richard Zheng, Stephen Haslett_.
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, cache=TRUE, fig.pos="!h") #sets global options for chunks when *knit*
+knitr::include_graphics
+#Note: messages and warnings will still show when running in the R console
+
+# Disable scientific numbers for readability purposes.
+options(scipen = 999)
+
+library(dplyr)
+library(gridExtra)
+library(DT)
+library(MASS)
+library(tidyverse) #includes dplyr and ggplot2
+library(reshape2)
+library(kableExtra)
+library(corrplot)
+library(Hmisc)
+library(PerformanceAnalytics)
+library(car)
+library(caret)
+library(MLmetrics)
+library(caTools)
+library(DataExplorer)
+library (varhandle)
+library(vcd)
+library(pscl)
+library(funModeling)
+```
+
+## Assignment Overview
+
+In this homework assignment, you will explore, analyze and model a data set containing approximately 8000 records representing a customer at an auto insurance company. 
+
+Your objective is to build multiple linear regression and binary logistic regression models on the training data to predict the probability that a person will crash their car and also the amount of money it will cost if the person does crash their car. You can only use the variables given to you (or variables that you derive from the variables provided). Below is a short description of the variables of interest in the data set:
+
+#### Data
+
+Each record has two response variables. The first response variable, TARGET_FLAG, is a 1 or a 0. A “1” means that the person was in a car crash. A zero means that the person was not in a car crash. The second response variable is TARGET_AMT. This value is zero if the person did not crash their car. But if they did crash their car, this number will be a value greater than zero.
+
+![Variables of Interest](./variable_information.png)
+
+## Deliverables
+
+* A write-up submitted in PDF format. Your write-up should have four sections. Each one is described below. You may assume you are addressing me as a fellow data scientist, so do not need to shy away from technical details.
+* Assigned prediction (probabilities, classifications) for the evaluation data set. Use a 0.5 threshold.
+* Include your R statistical programming code in an Appendix.
+
+
+## Data Exploration 
+
+The first variable in the above table (INDEX) was dropped from the dataset due to the fact that it is merely a row identifier, and has no impact on the target variables.
+
+```{r, dataExploration, echo=FALSE}
+# Pull in the provided insurance training and evaluation datasets.
+
+training_set <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework_4/insurance_training_data.csv',stringsAsFactors = TRUE)
+evaluation_set <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework_4/insurance-evaluation-data.csv',stringsAsFactors = TRUE)
+
+# remove index column
+training_set<-training_set[-c(1)] 
+evaluation_set<-evaluation_set[-c(1)]
+
+# List the structure of the training dataset.
+str(training_set)
+
+```
+
+
+
+```{r echo=FALSE}
+# View the data
+training_set%>% tibble(head(10))
+```
+
+```{r}
+
+glimpse(training_set)
+```
+
+
+```{r}
+summary(training_set)
+```
+
+
+```{r}
+# Check for missing data
+plot_missing(training_set, title = "% of missing data for all variables")
+#plot_missing(training_set$HOME_VAL, title = "% of missing data for HOME_VAL")
+
+```
+From the above it can be seen that the following variables have missing values: AGE, CAR_AGE and YOJ.
+
+
+```{r}
+# function to remove the comma and $-sign from some of the monetary variables
+formatDollar<- function(column){
+             as.numeric(gsub("\\,","",gsub("\\$","", column)))
+            }
+
+```
+
+
+
+```{r}
+# Clean data formatting
+training_set<-training_set%>%
+         mutate(BLUEBOOK = formatDollar(BLUEBOOK),
+                INCOME = formatDollar(INCOME),
+                HOME_VAL = formatDollar(HOME_VAL),
+                MSTATUS = as.factor(gsub("z_", "", MSTATUS)),
+                OLDCLAIM = formatDollar(OLDCLAIM),
+                JOB = as.factor(gsub("z_", "", JOB)),
+                SEX = as.factor(gsub("z_", "", SEX)),
+                EDUCATION = factor((gsub("<", "Less Than ", gsub("z_", "", EDUCATION))), 
+                levels = c("Less Than High School", "High School", "Bachelors", "Masters", "PhD")),
+                CAR_TYPE = as.factor(gsub("z_", "", CAR_TYPE)),
+                URBANICITY = as.factor(gsub("z_", "", URBANICITY)))
+
+``` 
+
+```{r}
+#Check the frequency distribution of the Target Flag
+freq(training_set$TARGET_FLAG)
+```
+
+```{r}
+
+plot_num(training_set)
+ 
+profiling_num(training_set)
+```
+
+```{r}
+#Impute missing values
+
+training_set$AGE<-impute(training_set$AGE, median)
+training_set$YOJ<-impute(training_set$YOJ, median)
+training_set$INCOME<-impute(training_set$INCOME, median)
+training_set$CAR_AGE<-impute(training_set$CAR_AGE, median)
+training_set$HOME_VAL<-impute(training_set$HOME_VAL, median)
+
+```
+
+
+```{r}
+summary(training_set)
+```
+
+```{r}
+# Filter the datasets to only those with a crash, for use in fitting a linear model for the claim amount
+training_set_claims = training_set%>%filter(TARGET_FLAG==1)
+evaluation_set_claims = evaluation_set%>% filter(TARGET_FLAG==1)
+nrow(training_set_claims)
+
+```
+
+```{r}
+claim_amount_model1=lm(TARGET_AMT ~ .-TARGET_FLAG, data = training_set_claims)
+summary(claim_amount_model1)
+```
+
+
+```{r}
+claim_amount_model2=lm(TARGET_AMT ~ BLUEBOOK+CAR_AGE, data = training_set_claims)
+summary(claim_amount_model2)
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
