@@ -380,8 +380,36 @@ qqline(resid(model4), col = "dodgerblue", lwd = 2)
 
 #### Model 5
 
+Using the Boxcox method for linear model.
+
+```{r}
+data <- training_set %>% filter(TARGET_FLAG == 1) 
+data <- data[-1]
+b <- boxcox(TARGET_AMT ~ . , data = data)
 
 
+lamda <- b$x
+lik <- b$y
+bc <- cbind(lamda, lik)
+l <- bc[order(-lik),][1,1]
+
+
+model_five <- lm(TARGET_AMT^(l) ~ . , data = data)
+
+summary(model_five)
+```
+
+Looking at the residual graphs to see if it is normally distributed.
+
+```{r}
+ggplot(data = model_five, aes(x = .fitted, y = .resid)) +
+  geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_smooth(se = FALSE) + xlab("Fitted values") + ylab("Residuals")
+
+ggplot(data = model_five, aes(x = .resid)) + geom_histogram() + xlab("Residuals")
+
+ggplot(data = model_five) + stat_qq(aes(sample = .stdresid)) + geom_abline()
+```
 \clearpage
 
 ## Task 4: Select Models
