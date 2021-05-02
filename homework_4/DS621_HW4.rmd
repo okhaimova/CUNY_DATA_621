@@ -30,6 +30,7 @@ library(corrplot)
 library(reshape2)
 library(e1071)
 library(visdat)
+library(mice)
 ```
 
 
@@ -54,14 +55,16 @@ Your objective is to build multiple linear regression and binary logistic regres
 
 ```{r, dataExploration, echo=FALSE}
 # Pull in the provided insurance training and evaluation datasets.
-training_set <- read.csv('./insurance_training_data.csv')
-evaluation_set <- read.csv('./insurance-evaluation-data.csv')
+training_set <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework_4/insurance_training_data.csv',stringsAsFactors = TRUE)
+evaluation_set <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework_4/insurance-evaluation-data.csv',stringsAsFactors = TRUE)
 
 # Explore the structure of the training dataset.
 str(training_set)
 
-# Remove the INDEX colunmn as it is of no value.
+# Remove the INDEX column from both training and evaluation datasets, as it is of no value.
 training_set <- training_set[,setdiff(colnames(training_set), 'INDEX')]
+evaluation_set <- evaluation_set[,setdiff(colnames(evaluation_set), 'INDEX')]
+
 ```
 
 \ 
@@ -79,7 +82,13 @@ training_set
 
 As we can see from the above table, The training dataset contains characters that will hinder our calculations so we need to remove or transform these. We will remove dollar signs from the INCOME, HOME_VAL, BLUEBOOK, and OLDCLAIM columns, and transform spaces to underscores in the EDUCATION, JOB, CAR_TYPE, URBANICITY columns.  
 
+Also the target variable TARGET_FLAG is actually a boolean variable. So it is better to convert it to a factor from its numeric data type.
+
 ```{r, dataExplorationTransformation, echo=FALSE}
+
+# Convert TARGET_FLAG from integer to factor
+training_set$TARGET_FLAG<-as.factor(training_set$TARGET_FLAG)
+
 # Remove dollar signs from the INCOME, HOME_VAL, BLUEBOOK, and OLDCLAIM columns by replacing them with empty strings.
 training_set$INCOME <- as.numeric(gsub("[\\$,]", "", training_set$INCOME))
 training_set$HOME_VAL <- as.numeric(gsub("[\\$,]", "", training_set$HOME_VAL))
@@ -103,6 +112,31 @@ training_set$URBANICITY <- gsub("[<,z_]", "", training_set$URBANICITY)
 training_set
 ```
 
+
+```{r, evalDataExplorationTransformation, echo=FALSE}
+# Remove dollar signs from the INCOME, HOME_VAL, BLUEBOOK, and OLDCLAIM columns by replacing them with empty strings.
+evaluation_set$INCOME <- as.numeric(gsub("[\\$,]", "", evaluation_set$INCOME))
+evaluation_set$HOME_VAL <- as.numeric(gsub("[\\$,]", "", evaluation_set$HOME_VAL))
+evaluation_set$BLUEBOOK <- as.numeric(gsub("[\\$,]", "", evaluation_set$BLUEBOOK))
+evaluation_set$OLDCLAIM <- as.numeric(gsub("[\\$,]", "", evaluation_set$OLDCLAIM))
+
+# Convert spaces to underscores in the EDUCATION, JOB, CAR_TYPE, and URBANICITY columns.
+evaluation_set$EDUCATION <- gsub(" ", "_", evaluation_set$EDUCATION)
+evaluation_set$JOB <- gsub(' ', '_', evaluation_set$JOB)
+evaluation_set$CAR_TYPE <- gsub(' ', '_', evaluation_set$CAR_TYPE) 
+evaluation_set$URBANICITY <- gsub(' ', '_', evaluation_set$URBANICITY)
+
+# Remove '<', and 'z_' characters from the MSTATUS, SEX, EDUCATION, JOB, CAR_TYPE, and URBANICITY columns.  
+evaluation_set$MSTATUS <- gsub("[<,z_]", "", evaluation_set$MSTATUS)
+evaluation_set$SEX <- gsub("[<,z_]", "", evaluation_set$SEX)
+evaluation_set$EDUCATION <- gsub("[<,z_]", "", evaluation_set$EDUCATION)
+evaluation_set$JOB <- gsub("[<,z_]", "", evaluation_set$JOB)
+evaluation_set$CAR_TYPE <- gsub("[<,z_]", "", evaluation_set$CAR_TYPE) 
+evaluation_set$URBANICITY <- gsub("[<,z_]", "", evaluation_set$URBANICITY)
+
+evaluation_set
+```
+
 ### Summary Statistics
 
 Todo: Summary intro text here.
@@ -114,29 +148,62 @@ summary(training_set)
 
 \ 
 
-
 Todo: Observation text here.
 
-
 \clearpage
+
 
 ### Missing Values
 
 ```{r, dataExplorationMissingValues}
-sapply(training_set, function(x) sum(is.na(x))) %>% kable() %>% kable_styling()
+sapply(training_set, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
 ```
 
-
-
-\ 
-
-As we can see from the above table of missing values, three variables contain missing values. The "CAR_AGE" variable has the largest amount of missing variables (510), followed by "YOJ" (454), and finally "AGE" (6).
+As we can see from the above table of missing values, three variables contain missing values. The "CAR_AGE" variable has the largest amount of missing variables (510), followed by "HOME_VALUE" (464),  YOJ" (454), "INCOME"(445) and finally "AGE" (6).
 
 Below is a visual representation of the missing data. 
 
 ```{r, dataExplorationMissingValuesVisual}
 vis_miss(training_set)
 ```
+
+\clearpage
+
+
+```{r, dataExplorationTransformation, echo=FALSE}
+#function to prepare dataframe for modeling
+prepare_data = function(df){
+    prepared = df%>%
+    # remove index
+    select(-INDEX) %>%
+    # remove unnecessary characters
+    mutate_all(~ str_remove_all(., "\\$|,|z_")) %>% 
+    type.convert(.)%>%
+    # impute NA values
+    mice(m=5,meth='pmm',seed=500)%>%
+    complete()
+    return(prepared)
+}
+
+training_set = prepare_data(training_set)
+
+evaluation_set = prepare_data(evaluation_set)
+
+head(training_set)
+```
+
+### Summary Statistics
+
+Todo: Summary intro text here.
+
+```{r, dataExplorationSummary, echo=FALSE}
+# Summarize the training dataset.
+summary(training_set)
+```
+
+\ 
+
+Todo: Observation text here.
 
 
 \clearpage
@@ -164,7 +231,7 @@ print(predictor_variables_plot)
 
 \ 
 
-Looking at the above distribution plots, we observe that there are a lot of skewed variables. Specifically, the `age` and `ptratio` variables are left skewed whilst the `dis`, `lstat`, `nox`, and `zn` variables are right skewed. The distance to employment centers (`dis`) variable tends to be lower and more right-skewed. The `chas` variable is a binary variable and therefore we only see values for 0.00 and 1.00.
+Looking at the above distribution plots, we observe that there are a lot of skewed variables. 
 
 \clearpage
 
@@ -195,19 +262,40 @@ Todo: Observation text here.
 
 ### Correlations
 
-```{r, dataCorrelation, echo=FALSE}
-cor_table <- cbind(training_set[13], training_set[1:12]) %>% data.frame()
-correlation_table <- cor(cor_table, method = 'pearson', use = 'complete.obs')[,1]
+In order to run correlations, we first filter the training dataset for just the records where there was an actual accident and a non-zero insurance claim. This is because the existence of a claim is conditional on the occurence of an accident. If we take the entire dataset for analyzing the correlation between the claim amount and the numeric variable, we would get skewed results.
+
+After we filter the records to those with TARGET_FLAG =1, then we further filter the columns to retain only the numeric predictor variables. In this case, that would result in the "TARGET_AMT" as the response variable, and the following numeric predictor variables:AGE,BLUEBOOK,CAR_AGE,CLM_FREQ,HOMEKIDS,HOME_VAL,INCOME,KIDSDRIV, MVR_PTS,TIF,TRAVTIME, OLD_CLAIM,YOJ.
+
+
+```{r filterOnlyActualAccidents, echo=FALSE}
+
+# Filter the dataset to only those with a crash, for use in fitting a linear model for the claim amount
+training_set_claims = training_set%>%filter(TARGET_FLAG==1)
+dim(training_set_claims)
+
+```
+
+```{r filterNumericVariables, echo=FALSE}
+training_set_numeric<-select_if(training_set_claims,is.numeric)
+
+training_set_numeric%>%head(10)
+
+```
+
+
+```{r}
+correlation_table <- cor(training_set_numeric, method = 'pearson', use = 'complete.obs')[,1]
 correlation_table %>%
   as.data.frame() %>%
   arrange(desc(abs(.))) %>%
-  kable(caption = 'Correlation of Crime Rate Above Median') %>% 
+  kable(caption = 'Correlation of numeric predictors with the Target Amount') %>% 
   kable_styling(bootstrap_options = c("striped", "hover"))
+
 ```
 
 
 ```{r, trainingDataCorrelation, echo=FALSE}
-correlation_matrix <- training_set
+correlation_matrix <- training_set_numeric
 correlation_matrix %>%
   cor(.) %>%
   corrplot(.,
@@ -221,12 +309,11 @@ correlation_matrix %>%
 
 \ 
 
-According to the correlation table and plot above, there is a high correlation between the accessibility
-to radial highways (`rad`), and the full-value property tax rate per $10,000 (`tax`) predictor variables. Additionally, the weighted 
-means of distance to the five Boston employment centers (`dis`) variable is usually negatively correlated with the other variables.
+According to the correlation table and plot above, there is relatively higher correlation between the TARGET_AMT and the BLUEBOOK value. We would have expected to see some correlation between the TARGET_AMT and the AGE of the vehicle, but that doesn't seem to be the case here. In any case, the age of the car would factor into the BLUEBOOK value, so including both variables in a linear model with TARGET_AMT is likely to introduce multi-collinearity.
 
 \clearpage
 
+ToDo - Update the following section and Task 2 below that.
 
 ### Variable Plots
 
@@ -236,14 +323,12 @@ Scatter plots of each variable versus the target variable.
 # Scatter plots for each of the variables against the target.
 col_size = dim(training_set)[2]
 cols = names(training_set)
-for (col in cols[1:col_size-1]) {
+for (col in cols[3:col_size]) {
   plot = training_set %>%
-    ggplot(aes_string(x = col, y = 'target')) +
+    ggplot(aes_string(x = col, y = 'TARGET_FLAG')) +
     geom_point(stat = 'identity') +
-    labs(title = paste(col,'vs.','target'))
-
+    labs(title = paste(col,'vs.','TARGET_FLAG'))
     print(plot)
-}
 
 ```
 
@@ -252,7 +337,7 @@ for (col in cols[1:col_size-1]) {
 
 **Describe how you have transformed the data by changing the original variables or creating new variables.**
 
-There are no missing values in the dataset so there is no need to impute values. Variable transformations (such as log, square root, quadratic, inverse, etc) will be applied during model building.
+
 
 \clearpage
 
@@ -262,66 +347,24 @@ Using the training data, build at least three different binary logistic regressi
 
 #### Model 1
 
-This model uses all of the variables and acts as a guide to which variables need to be included, excluded, or transformed.
-The `nox` variable has the greatest affect on the target variable, but the coefficients do not make sense as the intercept is out of bounds.
-
-```{r modelOne, fig.show="hold", out.width="50%", echo=FALSE}
-model1 <- glm(target ~  ., family = "binomial", data = training_set)
-
-summary(model1)
-
-plot(fitted(model1), resid(model1), col = "grey", pch = 20,
-     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
-abline(h = 0, col = "darkorange", lwd = 2)
-qqnorm(resid(model1), main = "Normal Q-Q Plot", col = "darkgrey")
-qqline(resid(model1), col = "dodgerblue", lwd = 2)
-```
 
 #### Model 2
 
-- Log/sqrt was applied to `age` and `lstat` as they were skewed.
-- `rm` was removed since it had a high p value.
-
-```{r modelTwo, fig.show = "hold", out.width="50%", echo=FALSE}
-model2 <- glm(target ~ zn + indus + chas + nox +  sqrt(age) + dis + rad + tax + ptratio + 
-                sqrt(lstat) + medv, family = "binomial", data = training_set)
-
-summary(model2)
-
-plot(fitted(model2), resid(model2), col = "grey", pch = 20,
-     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
-abline(h = 0, col = "darkorange", lwd = 2)
-qqnorm(resid(model2), main = "Normal Q-Q Plot", col = "darkgrey")
-qqline(resid(model2), col = "dodgerblue", lwd = 2)
-```
 
 #### Model 3 
 
-- Log/sqrt was applied to `age` and `stat` as they were skewed.
-- `rm` was removed since it had a high p value.
-- `lstat` was removed due to high p value
-- ratio of `rad`/`tax`, the full value property tax value squared per index of accessibility to radial highways
-- `indus` was removed 
-
-```{r modelThree, fig.show = "hold", out.width="50%", echo=FALSE}
-model3 <- glm(target ~ zn  + chas + nox +  sqrt(age) + dis + rad + tax + ptratio + 
-                 medv + I(rad/tax^2), family = "binomial", data = training_set)
+```{r}
+model3 = glm(TARGET_FLAG~.-TARGET_AMT-INCOME,training_set,family ='binomial')
 
 summary(model3)
-
-plot(fitted(model3), resid(model3), col = "grey", pch = 20,
-     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
-abline(h = 0, col = "darkorange", lwd = 2)
-qqnorm(resid(model3), main = "Normal Q-Q Plot", col = "darkgrey")
-qqline(resid(model3), col = "dodgerblue", lwd = 2)
 ```
 
 #### Model 4
 
-- remove `chas` variable because it is a binary variable
+Here we run a linear regression (for the records that represent an actual accident) i.e. TARGET_FLAG=1, between the TARGET_AMT and the BLUEBOOK variable.
 
 ```{r chasVariableRemove,  echo=FALSE}
-model4 = glm(target~.-chas,training_set,family = "binomial")
+model4 = lm(TARGET_AMT ~ BLUEBOOK, data = training_set_numeric)
 
 summary(model4)
 
@@ -331,6 +374,13 @@ abline(h = 0, col = "darkorange", lwd = 2)
 qqnorm(resid(model4), main = "Normal Q-Q Plot", col = "darkgrey")
 qqline(resid(model4), col = "dodgerblue", lwd = 2)
 ```
+
+\clearpage
+
+
+#### Model 5
+
+
 
 \clearpage
 
@@ -355,11 +405,10 @@ to_binary=function(arr,thresh){
 
 
 # Predictions based on a threshhold of 0.5.
-predictions = training_set[c('target')]
+predictions = training_set[c('TARGET_FLAG')]
 predictions$model1 = to_binary(predict(model1,type ='response'),0.5)
 predictions$model2 = to_binary(predict(model2,type ='response'),0.5)
 predictions$model3 = to_binary(predict(model3,type ='response'),0.5)
-predictions$model4 = to_binary(predict(model4,type ='response'),0.5)
 
 ```
 
@@ -372,8 +421,7 @@ predictions = predictions %>%
   mutate(target = as.factor(target),
          model1 = as.factor(model1),
          model2 = as.factor(model2),
-         model3 = as.factor(model3),
-         model4 = as.factor(model4)
+         model3 = as.factor(model3)
          )
 ```
 
@@ -382,30 +430,23 @@ predictions = predictions %>%
 
 ```{r, echo = FALSE}
 # Model 1.
-confusionMatrix(predictions$model1,predictions$target)
+confusionMatrix(predictions$model1,predictions$TARGET_FLAG)
 ```
 
 ### Model 2 Confusion Matrix
 
 ```{r, echo = FALSE}
 # Model 2.
-confusionMatrix(predictions$model2,predictions$target)
+confusionMatrix(predictions$model2,predictions$TARGET_FLAG)
 ```
 
 ### Model 3 Confusion Matrix
 
 ```{r, echo = FALSE}
 # Model 3.
-confusionMatrix(predictions$model3,predictions$target)
+confusionMatrix(predictions$model3,predictions$TARGET_FLAG)
 ```
 
-### Model 4 Confusion Matrix
-
-
-```{r, echo = FALSE}
-# Model 4.
-confusionMatrix(predictions$model4,predictions$target)
-```
 \clearpage
 
 ### Model Comparison
@@ -484,7 +525,6 @@ f1_score <- function(col1, col2) {
 roc_model1 <- roc(predictions$target, as.numeric(predictions$model1))
 roc_model2 <- roc(predictions$target, as.numeric(predictions$model2))
 roc_model3 <- roc(predictions$target, as.numeric(predictions$model3))
-roc_model4 <- roc(predictions$target, as.numeric(predictions$model4))
 
 
 #accuracy
@@ -527,14 +567,6 @@ model_comparison
 
 ### Model of Choice
 
-Since Model 4 has the highest sensitivity rate we will be picking that model to predict on the evaluation set. 
-This means that it has the smallest false negative rate.
-
-```{r predictionsTwo, echo=FALSE}
-evaluation_set$predictions = to_binary(predict(model4, evaluation_set,type = 'response'), 0.5)
-
-head(evaluation_set)
-```
 
 \clearpage
 
