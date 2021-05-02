@@ -329,6 +329,7 @@ for (col in cols[3:col_size]) {
     geom_point(stat = 'identity') +
     labs(title = paste(col,'vs.','TARGET_FLAG'))
     print(plot)
+}
 
 ```
 
@@ -345,10 +346,39 @@ for (col in cols[3:col_size]) {
 
 Using the training data, build at least three different binary logistic regression models, using different variables (or the same variables with different transformations).
 
+#### Base Model - All Variables
+
+We created a base model containing all the variables in the dataset to see which variables are significant.
+
+```{r baseModel, echo = FALSE}
+# Disable scientific numbers for readability purposes.
+options(scipen = 999)
+
+base_model <- glm(TARGET_FLAG ~ ., family = binomial(link = 'logit'), data = training_set)
+summary(base_model)
+``` 
+
 #### Model 1
 
 
 #### Model 2
+
+In this model, we removed variables that appeared to be insignificant to see if this resulted in a better performing model.
+
+```{r model2, echo = FALSE}
+# Disable scientific numbers for readability purposes.
+options(scipen = 999)
+
+model2 = glm(TARGET_FLAG ~ INCOME +
+             PARENT1 + HOME_VAL +
+             MSTATUS + EDUCATION +
+             TRAVTIME + CAR_USE +
+             TIF + CAR_TYPE +
+             REVOKED + URBANICITY,
+             data = training_set, family = binomial(link = 'logit'))
+
+summary(model2, digits = 2)
+```  
 
 
 #### Model 3 
