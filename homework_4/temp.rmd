@@ -144,18 +144,16 @@ vis_miss(training_set)
 
 ### Impute Missing Values
 
-Data is imputed using the `mice` package.
+Data is imputed using the medians of the missing variables.
 
 ```{r, Imputation, echo = FALSE, message = FALSE}
-temp <- mice(data = training_set[,c("AGE","YOJ", "INCOME","HOME_VAL","CAR_AGE")],
-                                 m = 1, method = "pmm", maxit = 3, seed = 1234)
-temp2 <- complete(temp)
+
 training_set <- training_set %>%
-  mutate(AGE = temp2$AGE,
-         YOJ = temp2$YOJ,
-         INCOME = temp2$INCOME,
-         HOME_VAL = temp2$HOME_VAL,
-         CAR_AGE = temp2$CAR_AGE)
+  mutate(AGE = ifelse(is.na(AGE),median(training_set$AGE, na.rm =TRUE),AGE),
+         YOJ = ifelse(is.na(YOJ),median(training_set$YOJ, na.rm =TRUE), YOJ),
+         INCOME = ifelse(is.na(INCOME),median(training_set$INCOME, na.rm =TRUE), INCOME),
+         HOME_VAL = ifelse(is.na(HOME_VAL),median(training_set$HOME_VAL, na.rm =TRUE), HOME_VAL),
+         CAR_AGE = ifelse(is.na(CAR_AGE),median(training_set$CAR_AGE, na.rm =TRUE), CAR_AGE))
 
 ```
 
