@@ -1093,7 +1093,6 @@ model_comparison <- rbind(acc, class_error, prec, spec, sens, f1, a_u_c) %>%
 
 - Picked Models 2 and 4 because they had the best results
 
-```{r}
 evaluation_set = evaluation_set%>%
   mutate(AGE = ifelse(is.na(AGE),median(training_set$AGE, na.rm =TRUE),AGE),
          YOJ = ifelse(is.na(YOJ),median(training_set$YOJ, na.rm =TRUE), YOJ),
