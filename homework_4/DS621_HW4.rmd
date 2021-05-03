@@ -1085,8 +1085,7 @@ model_comparison <- rbind(acc, class_error, prec, spec, sens, f1, a_u_c) %>%
                  'specificity', 'F1 score', 'AUC')) %>%
   set_colnames(c('Model 1', 'Model 2', 'Model 3', 'Model 4')) %>%
   round(., 4)
-```
-
+  
 # =====================================================================================
 # Evaluating Dataset
 # =====================================================================================
@@ -1102,3 +1101,6 @@ evaluation_set = evaluation_set%>%
 evaluation_set$TARGET_FLAG = to_binary(predict(model2,evaluation_set,type = "response"),0.5)
 evaluation_set$TARGET_AMT = predict(model4,evaluation_set)
 head(evaluation_set)
+```
+
+
