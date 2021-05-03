@@ -403,9 +403,7 @@ qqline(resid(model4), col = "dodgerblue", lwd = 2)
 Using the Boxcox method for linear model.
 
 ```{r, Model5, fig.show = "hold", out.width="50%", message = FALSE, echo = FALSE}
-data <- training_set %>% filter(TARGET_FLAG == 1) 
-data <- data[-1]
-b <- boxcox(TARGET_AMT ~ . , data = data)
+b <- boxcox(TARGET_AMT ~ . , data = training_set_claims[-1])
 
 
 lamda <- b$x
@@ -414,7 +412,7 @@ bc <- cbind(lamda, lik)
 l <- bc[order(-lik),][1,1]
 
 
-model5 <- lm(TARGET_AMT^(l) ~ . , data = data)
+model5 <- lm(TARGET_AMT^(l) ~ . , data = training_set_claims[-1])
 
 summary(model5)
 
