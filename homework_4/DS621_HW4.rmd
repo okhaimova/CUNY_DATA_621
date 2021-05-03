@@ -979,7 +979,6 @@ accuracy <- function(df,col1,col2) {
   # accuracy
   return (correct/len)
 }
-
 class_error_rate <- function(df,col1,col2) {
   true = df[,col1]
   predict = df[,col2]
@@ -995,7 +994,6 @@ class_error_rate <- function(df,col1,col2) {
   # error rate
   return (error/len)
 }
-
 precision <- function(col1, col2) {
   # Calculate the total number of true positives in the dataset.
   true_positive <- sum(col1 == 1 & col2 == 1)
@@ -1005,8 +1003,6 @@ precision <- function(col1, col2) {
   prediction_precision <- true_positive / (true_positive + false_positive)
   return(prediction_precision)
 }
-
-
 sensitivity <- function(col1, col2) {
   
   true_positive <- sum(col1 == 1 & col2 == 1)
@@ -1016,7 +1012,6 @@ sensitivity <- function(col1, col2) {
    
   return(sensitivity)
 } 
-
 specificity <- function(col1, col2) {
   
   true_negative <- sum(col2 == 0 & col1 == 0)
@@ -1026,65 +1021,47 @@ specificity <- function(col1, col2) {
   
   return(specificity)
 }
-
 f1_score <- function(col1, col2) {
   sens <- sensitivity(col1, col2)
   prec <- precision(col1, col2)
   f1 <- 2 * sens * prec / (prec+sens)
   return(f1)
 }
-
-roc_model1 <- roc(predictions$target, as.numeric(predictions$model1))
-roc_model2 <- roc(predictions$target, as.numeric(predictions$model2))
-roc_model3 <- roc(predictions$target, as.numeric(predictions$model3))
-roc_model4 <- roc(predictions$target, as.numeric(predictions$model4))
-
-
+roc_model1 <- roc(predictions$TARGET_FLAG, as.numeric(predictions$model1))
+roc_model2 <- roc(predictions$TARGET_FLAG, as.numeric(predictions$model2))
+roc_model3 <- roc(predictions$TARGET_FLAG, as.numeric(predictions$model3))
 #accuracy
-acc <- c(accuracy(predictions,'target','model1'),
-         accuracy(predictions,'target','model2'),
-         accuracy(predictions,'target','model3'),
-         accuracy(predictions,'target','model4'))
-
+acc <- c(accuracy(predictions,'TARGET_FLAG','model1'), accuracy(predictions,'TARGET_FLAG','model2'),
+         accuracy(predictions,'TARGET_FLAG','model3'))
 #classification error rate
-class_error <- c(class_error_rate(predictions,'target','model1'),
-                 class_error_rate(predictions,'target','model2'),
-                 class_error_rate(predictions,'target','model3'),
-                 class_error_rate(predictions,'target','model4'))
-
+class_error <- c(class_error_rate(predictions,'TARGET_FLAG','model1'),
+                 class_error_rate(predictions,'TARGET_FLAG','model2'),
+                 class_error_rate(predictions,'TARGET_FLAG','model3'))
 #precision
-prec <- c(precision(predictions$target, predictions$model1),
-          precision(predictions$target, predictions$model2),
-          precision(predictions$target, predictions$model3),
-          precision(predictions$target, predictions$model4))
-
+prec <- c(precision(predictions$TARGET_FLAG, predictions$model1), 
+          precision(predictions$TARGET_FLAG, predictions$model2),
+          precision(predictions$TARGET_FLAG, predictions$model3))
 #specificity
-spec <- c(specificity(predictions$target, predictions$model1),
-          specificity(predictions$target, predictions$model2),
-          specificity(predictions$target, predictions$model3),
-          specificity(predictions$target, predictions$model4))
-
+spec <- c(specificity(predictions$TARGET_FLAG, predictions$model1), 
+          specificity(predictions$TARGET_FLAG, predictions$model2),
+          specificity(predictions$TARGET_FLAG, predictions$model3))
 #sensitivity
-sens <- c(sensitivity(predictions$target, predictions$model1),
-          sensitivity(predictions$target, predictions$model2),
-          sensitivity(predictions$target, predictions$model3),
-          sensitivity(predictions$target, predictions$model4))
-
+sens <- c(sensitivity(predictions$TARGET_FLAG, predictions$model1), 
+          sensitivity(predictions$TARGET_FLAG, predictions$model2),
+          sensitivity(predictions$TARGET_FLAG, predictions$model3))
 #f1 score
-f1 <- c(f1_score(predictions$target, predictions$model1),
-        f1_score(predictions$target, predictions$model2), 
-        f1_score(predictions$target, predictions$model3),
-        f1_score(predictions$target, predictions$model4))
-
+f1 <- c(f1_score(predictions$TARGET_FLAG, predictions$model1), 
+        f1_score(predictions$TARGET_FLAG, predictions$model2), 
+        f1_score(predictions$TARGET_FLAG, predictions$model3))
 #AUC
-a_u_c <- c(auc(roc_model1), auc(roc_model2), auc(roc_model3), auc(roc_model4))
-
+a_u_c <- c(auc(roc_model1), auc(roc_model2), auc(roc_model3))
 model_comparison <- rbind(acc, class_error, prec, spec, sens, f1, a_u_c) %>%
   as.data.frame() %>%
-  set_rownames(c('accuracy', 'classification error rate', 'precision', 'sensitivity', 
+  magrittr::set_rownames(c('accuracy', 'classification error rate', 'precision', 'sensitivity', 
                  'specificity', 'F1 score', 'AUC')) %>%
-  set_colnames(c('Model 1', 'Model 2', 'Model 3', 'Model 4')) %>%
+  magrittr::set_colnames(c('Model 1', 'Model 2', 'Model 3')) %>%
   round(., 4)
+model_comparison
   
 # =====================================================================================
 # Evaluating Dataset
