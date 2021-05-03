@@ -643,6 +643,10 @@ library(ggplot2)
 library(kableExtra)
 library(corrplot)
 library(reshape2)
+library(e1071)
+library(visdat)
+library(mice)
+library(MASS)
 
 
 # =====================================================================================
@@ -650,8 +654,8 @@ library(reshape2)
 # =====================================================================================
 
 # Pull in the provided crime training and evaluation datasets.
-training_set <- read.csv('CUNY_DATA_621/main/homework3/crime-training-data_modified.csv')
-evaluation_set <- read.csv('CUNY_DATA_621/main/homework3/crime-evaluation-data_modified.csv')
+training_set <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework_4/insurance_training_data.csv',stringsAsFactors = TRUE)
+evaluation_set <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework_4/insurance-evaluation-data.csv',stringsAsFactors = TRUE)
 
 # List the structure of the training dataset.
 str(training_set)
@@ -664,72 +668,107 @@ str(training_set)
 # Summarize the training dataset.
 summary(training_set)
 
+# =====================================================================================
+# Cleaning Data
+# =====================================================================================
+
+training_set <- training_set %>%
+  # remove the index variable
+  dplyr::select(-INDEX) %>%
+  # remove characters such aS $ | , | _Z
+  mutate_all(~ str_remove_all(., "\\$|,|z_")) %>%
+  # convert spaces to underscores
+  # mutate_all(~ str_replace_all(., " ", "_")) %>%
+  # convert types automatically from chr type
+  type.convert(.) %>% 
+  # convert TARGET_FLAG to factor
+  mutate(TARGET_FLAG = as.factor(TARGET_FLAG))
+  
+ evaluation_set <- evaluation_set %>%
+  # remove the index variable
+  dplyr::select(-INDEX) %>%
+  # remove characters such aS $ | , | _Z
+  mutate_all(~ str_remove_all(., "\\$|,|z_")) %>%
+  # convert spaces to underscores
+  # mutate_all(~ str_replace_all(., " ", "_")) %>%
+  # convert types automatically from chr type
+  type.convert(.) %>% 
+  # convert TARGET_FLAG to factor
+  mutate(TARGET_FLAG = as.factor(TARGET_FLAG))
 
 # =====================================================================================
 # Check for Missing Values
 # =====================================================================================
 
 # Check for missing values using the Amelia package's missmap() function.
-missmap(training_set, main = 'Missing Values Vs. Observed Values')
-```
+sapply(training_set, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
+
+As we can see from the above table of missing values, three variables contain missing values. The "CAR_AGE" variable has the largest amount of missing variables (510), followed by "HOME_VALUE" (464),  YOJ" (454), "INCOME"(445) and finally "AGE" (6).
+
+Below is a visual representation of the missing data. 
+
+vis_miss(training_set)
+
 \clearpage
 
-```
+# =====================================================================================
+# Imputing Missing Values
+# =====================================================================================
+
+training_set <- training_set %>%
+  mutate(AGE = ifelse(is.na(AGE),median(training_set$AGE, na.rm =TRUE),AGE),
+         YOJ = ifelse(is.na(YOJ),median(training_set$YOJ, na.rm =TRUE), YOJ),
+         INCOME = ifelse(is.na(INCOME),median(training_set$INCOME, na.rm =TRUE), INCOME),
+         HOME_VAL = ifelse(is.na(HOME_VAL),median(training_set$HOME_VAL, na.rm =TRUE), HOME_VAL),
+         CAR_AGE = ifelse(is.na(CAR_AGE),median(training_set$CAR_AGE, na.rm =TRUE), CAR_AGE))
+         
+
 # =====================================================================================
 # Distribution Plots
 # =====================================================================================
 
 # Using the Dplyr package, massage the data by removing the target value prior
 # to plotting a histogram for each predictor variable.
-predictor_vars <- training_set %>% dplyr::select(-target) %>%
-  gather(key = 'predictor_variable', value = 'value')
-
-# Plot and print a histogram for each predictor variable.
-predictor_variables_plot <- ggplot(predictor_vars) +
-  geom_histogram(aes(x = value, y = ..density..), bins = 30, color = 'blue') +
-  labs(title = 'Distributions of Predictor Variables') +
+training_set %>%
+  mutate(CLM_FREQ = as.factor(CLM_FREQ),
+         HOMEKIDS = as.factor(HOMEKIDS),
+         KIDSDRIV = as.factor(KIDSDRIV),
+         MVR_PTS = as.factor(MVR_PTS)) %>%
+  select_if(is.factor) %>%
+  gather(variable, value) %>%
+  ggplot(., aes(x = value)) + 
+  geom_histogram(bins = 25, stat = 'count') +
+  labs(title = 'Distributions of Categorical Variables') +
+  facet_wrap(~variable, scales ="free", ncol = 4) +
+  labs(x = element_blank(), y = element_blank()) +
+  theme(axis.text.x = element_text(angle = 90))
+  
+training_set %>%
+  mutate(CLM_FREQ = as.factor(CLM_FREQ),
+         HOMEKIDS = as.factor(HOMEKIDS),
+         KIDSDRIV = as.factor(KIDSDRIV),
+         MVR_PTS = as.factor(MVR_PTS)) %>%
+  select_if(negate(is.factor)) %>%
+  gather(variable, value) %>%
+  ggplot(., aes(x = value)) +
+  geom_histogram(bins = 30, color = 'blue') +
+  labs(title = 'Distributions of Continuous Predictor Variables') +
   theme(plot.title = element_text(hjust = 0.5)) +
   geom_density(aes(x = value), color = 'red') +
-  facet_wrap(. ~predictor_variable, scales = 'free', ncol = 3)
-
-print(predictor_variables_plot)
-
-
-# =====================================================================================
-# Box Plots
-# =====================================================================================
-
-# Create box plots for each of the predictor variables.
-predictor_vars_boxplots <- training_set %>% dplyr::select(-target) %>%
-  gather(key = 'variable', value = 'value') %>%
-  ggplot(., aes(x = variable, y = value)) + 
-  geom_boxplot(fill = 'salmon', color = 'darkred') +
-  facet_wrap(~variable, scales = 'free', ncol = 4) +
-  labs(x = element_blank(), y = element_blank(), title = 'Box Plots of Predictor Variables') +
-  theme(plot.title = element_text(hjust = 0.5))
-
-print(predictor_vars_boxplots)
+  facet_wrap(. ~variable, scales = 'free', ncol = 3)
 
 # =====================================================================================
 # Data Correlation Table and Matrix Plot
 # =====================================================================================
 
-cor_table <- cbind(training_set[13], training_set[1:12]) %>% data.frame()
-correlation_table <- cor(cor_table, method = 'pearson', use = 'complete.obs')[,1]
+training_set_claims = training_set%>%filter(TARGET_FLAG==1)
+training_set_numeric<-select_if(training_set_claims,is.numeric)
+correlation_table <- cor(training_set_numeric, method = 'pearson', use = 'complete.obs')[,1]
 correlation_table %>%
-  kable(caption = 'Correlation of Crime Rate Above Median') %>%
+  as.data.frame() %>%
+  arrange(desc(abs(.))) %>%
+  kable(caption = 'Correlation of numeric predictors with the Target Amount') %>% 
   kable_styling(bootstrap_options = c("striped", "hover"))
-  
-correlation_matrix <- training_set
-correlation_matrix %>%
-  cor(.) %>%
-  corrplot(.,
-           title = 'Correlation Matrix of Training Set Predictor Variables',
-           method = 'color',
-           type = 'lower',
-           tl.col = 'black',
-           tl.srt = 45,
-           mar = c(0, 0, 2, 0))
 
 # =====================================================================================
 # Scatter Plots of Each Variable Versus the Target Variable
@@ -737,22 +776,44 @@ correlation_matrix %>%
 
 # Scatter plots for each of the variables against the target.
 col_size = dim(training_set)[2]
-cols = names(training_set)
-for (col in cols[1:col_size-1]) {
+cols = training_set %>%
+  mutate(CLM_FREQ = as.factor(CLM_FREQ),
+         HOMEKIDS = as.factor(HOMEKIDS),
+         KIDSDRIV = as.factor(KIDSDRIV),
+         MVR_PTS = as.factor(MVR_PTS)) %>%
+  select_if(negate(is.factor)) %>%
+  names(.)
+for (col in cols[2:10]) {
   plot = training_set %>%
-    ggplot(aes_string(x = col, y = 'target')) +
+    ggplot(aes_string(x = col, y = 'TARGET_AMT')) +
     geom_point(stat = 'identity') +
-    labs(title = paste(col,'vs.','target'))
-
+    labs(title = paste(col,'vs.','TARGET_AMT'))
     print(plot)
 }
-
 
 # =====================================================================================
 # Model One
 # =====================================================================================
 
-model1 <- glm(target ~  ., family = "binomial", data = training_set)
+- `EDUCATION` was grouped as "College" and "No College"
+- `AGE` was grouped as "Under 25" and "25 and Over"
+- `JOB` was grouped as "Careered" and "Not Careered"
+- `MINIVAN` grouped the `CAR_TYPE` as "yes" or "no" if it was a minivan
+- `RED_CAR`, `CAR_AGE`, `SEX`, `YOJ` , `HOMEKIDS` were removed due to high p value 
+
+options(scipen = 999)
+model1 <- training_set %>%
+  mutate(EDUCATION = ifelse(EDUCATION=="Bachelors" |EDUCATION=="Masters"|EDUCATION=="PhD", 
+                            "College","No College"),
+         AGE = ifelse(AGE < 25, "Under 25", "Over 25"),
+         JOB = ifelse(JOB=="Student" | JOB =="Home Maker" | JOB =="Clerical", "Not Careered", "Careered"),
+         MINIVAN = as.factor(ifelse(CAR_TYPE == "Minivan", "yes", "no")),
+         KIDSDRIV = as.factor(ifelse(KIDSDRIV == 0, "no", "yes")),
+         ) %>%
+
+  glm(TARGET_FLAG ~ KIDSDRIV + AGE  + INCOME + PARENT1 + HOME_VAL + MSTATUS + 
+        EDUCATION + JOB + TRAVTIME + CAR_USE + BLUEBOOK + TIF + OLDCLAIM + 
+        CLM_FREQ + REVOKED + MVR_PTS + URBANICITY + MINIVAN, family= "binomial", data = .)
 
 summary(model1)
 
@@ -767,16 +828,22 @@ qqline(resid(model1), col = "dodgerblue", lwd = 2)
 # Model Two
 # =====================================================================================
 
-model2 <- glm(target ~ zn + indus + chas + nox +  sqrt(age) + dis + rad + tax + ptratio + 
-                sqrt(lstat) + medv, family = "binomial", data = training_set)
+options(scipen = 999)
+model2 = glm(TARGET_FLAG ~ INCOME +
+             PARENT1 + HOME_VAL +
+             MSTATUS + EDUCATION +
+             TRAVTIME + CAR_USE +
+             TIF + CAR_TYPE +
+             REVOKED + URBANICITY,
+             data = training_set, family = binomial(link = 'logit'))
+summary(model2, digits = 2)
 
-summary(model2)
 
 plot(fitted(model1), resid(model1), col = "grey", pch = 20,
      xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
 abline(h = 0, col = "darkorange", lwd = 2)
 qqnorm(resid(model1), main = "Normal Q-Q Plot", col = "darkgrey")
-qqline(resid(model1), col = "dodgerblue", lwd = 2)
+qqline(resid(model1), col = "dodgerblue", lwd = 2) col = "dodgerblue", lwd = 2)
 ```
 
 \clearpage
@@ -786,26 +853,57 @@ qqline(resid(model1), col = "dodgerblue", lwd = 2)
 # Model Three
 # =====================================================================================
 
-model3 <- glm(target ~ zn  + chas + nox +  sqrt(age) + dis + rad + tax + ptratio + 
-                 medv + I(rad/tax^2), family = "binomial", data = training_set)
+model3 = glm(TARGET_FLAG~.-TARGET_AMT-INCOME,training_set,family ='binomial')
 
 summary(model3)
 
-plot(fitted(model1), resid(model1), col = "grey", pch = 20,
+plot(fitted(model3), resid(model3), col = "grey", pch = 20,
      xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
 abline(h = 0, col = "darkorange", lwd = 2)
-qqnorm(resid(model1), main = "Normal Q-Q Plot", col = "darkgrey")
-qqline(resid(model1), col = "dodgerblue", lwd = 2)
+qqnorm(resid(model3), main = "Normal Q-Q Plot", col = "darkgrey")
+qqline(resid(model3), col = "dodgerblue", lwd = 2)
 
 
 # =====================================================================================
 # Model Four
 # =====================================================================================
 
-model4 = glm(target~.-chas,training_set,family = "binomial")
+Here we run a linear regression (for the records that represent an actual accident) i.e. TARGET_FLAG=1, between the TARGET_AMT and the BLUEBOOK variable.
+
+model4 = lm(TARGET_AMT ~ BLUEBOOK, data = training_set_numeric)
 
 summary(model4)
 
+plot(fitted(model4), resid(model4), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
+abline(h = 0, col = "darkorange", lwd = 2)
+qqnorm(resid(model4), main = "Normal Q-Q Plot", col = "darkgrey")
+qqline(resid(model4), col = "dodgerblue", lwd = 2)
+
+# =====================================================================================
+# Model Five
+# =====================================================================================
+
+data <- training_set %>% filter(TARGET_FLAG == 1) 
+data <- data[-1]
+b <- boxcox(TARGET_AMT ~ . , data = data)
+
+
+lamda <- b$x
+lik <- b$y
+bc <- cbind(lamda, lik)
+l <- bc[order(-lik),][1,1]
+
+
+model5 <- lm(TARGET_AMT^(l) ~ . , data = data)
+
+summary(model5)
+
+plot(fitted(model5), resid(model5), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
+abline(h = 0, col = "darkorange", lwd = 2)
+qqnorm(resid(model5), main = "Normal Q-Q Plot", col = "darkgrey")
+qqline(resid(model5), col = "dodgerblue", lwd = 2)
 
 # =====================================================================================
 # Model Selection
@@ -830,7 +928,6 @@ predictions = training_set[c('target')]
 predictions$model1 = to_binary(predict(model1,type ='response'),0.5)
 predictions$model2 = to_binary(predict(model2,type ='response'),0.5)
 predictions$model3 = to_binary(predict(model3,type ='response'),0.5)
-predictions$model4 = to_binary(predict(model4,type ='response'),0.5)
 head(predictions)
 ```
 
@@ -846,8 +943,7 @@ predictions = predictions %>%
   mutate(target = as.factor(target),
          model1 = as.factor(model1),
          model2 = as.factor(model2),
-         model3 = as.factor(model3),
-         model4 = as.factor(model4)
+         model3 = as.factor(model3)
          )
 
 # Model 1.
@@ -858,9 +954,6 @@ confusionMatrix(predictions$model2,predictions$target)
 
 # Model 3.
 confusionMatrix(predictions$model3,predictions$target)
-
-# Model 4.
-confusionMatrix(predictions$model4,predictions$target)
 ```
 
 \clearpage
@@ -993,3 +1086,20 @@ model_comparison <- rbind(acc, class_error, prec, spec, sens, f1, a_u_c) %>%
   set_colnames(c('Model 1', 'Model 2', 'Model 3', 'Model 4')) %>%
   round(., 4)
 ```
+
+# =====================================================================================
+# Evaluating Dataset
+# =====================================================================================
+
+- Picked Models 2 and 4 because they had the best results
+
+```{r}
+evaluation_set = evaluation_set%>%
+  mutate(AGE = ifelse(is.na(AGE),median(training_set$AGE, na.rm =TRUE),AGE),
+         YOJ = ifelse(is.na(YOJ),median(training_set$YOJ, na.rm =TRUE), YOJ),
+         INCOME = ifelse(is.na(INCOME),median(training_set$INCOME, na.rm =TRUE), INCOME),
+         HOME_VAL = ifelse(is.na(HOME_VAL),median(training_set$HOME_VAL, na.rm =TRUE), HOME_VAL),
+         CAR_AGE = ifelse(is.na(CAR_AGE),median(training_set$CAR_AGE, na.rm =TRUE), CAR_AGE))
+evaluation_set$TARGET_FLAG = to_binary(predict(model2,evaluation_set,type = "response"),0.5)
+evaluation_set$TARGET_AMT = predict(model4,evaluation_set)
+head(evaluation_set)
