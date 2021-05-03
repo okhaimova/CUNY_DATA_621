@@ -695,7 +695,11 @@ training_set <- training_set %>%
   type.convert(.) %>% 
   # convert TARGET_FLAG to factor
   mutate(TARGET_FLAG = as.factor(TARGET_FLAG))
+```
 
+\clearpage
+
+```
 # =====================================================================================
 # Check for Missing Values
 # =====================================================================================
@@ -709,7 +713,11 @@ Below is a visual representation of the missing data.
 
 vis_miss(training_set)
 
+```
+
 \clearpage
+
+```
 
 # =====================================================================================
 # Imputing Missing Values
@@ -722,7 +730,11 @@ training_set <- training_set %>%
          HOME_VAL = ifelse(is.na(HOME_VAL),median(training_set$HOME_VAL, na.rm =TRUE), HOME_VAL),
          CAR_AGE = ifelse(is.na(CAR_AGE),median(training_set$CAR_AGE, na.rm =TRUE), CAR_AGE))
          
+```
 
+\clearpage
+
+```
 # =====================================================================================
 # Distribution Plots
 # =====================================================================================
@@ -756,7 +768,11 @@ training_set %>%
   theme(plot.title = element_text(hjust = 0.5)) +
   geom_density(aes(x = value), color = 'red') +
   facet_wrap(. ~variable, scales = 'free', ncol = 3)
+```
 
+\clearpage
+
+```
 # =====================================================================================
 # Data Correlation Table and Matrix Plot
 # =====================================================================================
@@ -769,7 +785,11 @@ correlation_table %>%
   arrange(desc(abs(.))) %>%
   kable(caption = 'Correlation of numeric predictors with the Target Amount') %>% 
   kable_styling(bootstrap_options = c("striped", "hover"))
+```
 
+\clearpage
+
+```
 # =====================================================================================
 # Scatter Plots of Each Variable Versus the Target Variable
 # =====================================================================================
@@ -879,7 +899,11 @@ plot(fitted(model4), resid(model4), col = "grey", pch = 20,
 abline(h = 0, col = "darkorange", lwd = 2)
 qqnorm(resid(model4), main = "Normal Q-Q Plot", col = "darkgrey")
 qqline(resid(model4), col = "dodgerblue", lwd = 2)
+```
 
+\clearpage
+
+```
 # =====================================================================================
 # Model Five
 # =====================================================================================
@@ -904,7 +928,11 @@ plot(fitted(model5), resid(model5), col = "grey", pch = 20,
 abline(h = 0, col = "darkorange", lwd = 2)
 qqnorm(resid(model5), main = "Normal Q-Q Plot", col = "darkgrey")
 qqline(resid(model5), col = "dodgerblue", lwd = 2)
+```
 
+\clearpage
+
+```
 # =====================================================================================
 # Model Selection
 # =====================================================================================
@@ -1062,7 +1090,11 @@ model_comparison <- rbind(acc, class_error, prec, spec, sens, f1, a_u_c) %>%
   magrittr::set_colnames(c('Model 1', 'Model 2', 'Model 3')) %>%
   round(., 4)
 model_comparison
-  
+```
+
+\clearpage
+
+```
 # =====================================================================================
 # Evaluating Dataset
 # =====================================================================================
