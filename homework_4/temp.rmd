@@ -613,6 +613,22 @@ model_comparison
 
 ### Model of Choice
 
+- Picked Models 2 and 4 because they had the best results
+
+```{r}
+evaluation_set = evaluation_set%>%
+  mutate(AGE = ifelse(is.na(AGE),median(training_set$AGE, na.rm =TRUE),AGE),
+         YOJ = ifelse(is.na(YOJ),median(training_set$YOJ, na.rm =TRUE), YOJ),
+         INCOME = ifelse(is.na(INCOME),median(training_set$INCOME, na.rm =TRUE), INCOME),
+         HOME_VAL = ifelse(is.na(HOME_VAL),median(training_set$HOME_VAL, na.rm =TRUE), HOME_VAL),
+         CAR_AGE = ifelse(is.na(CAR_AGE),median(training_set$CAR_AGE, na.rm =TRUE), CAR_AGE))
+
+evaluation_set$TARGET_FLAG = to_binary(predict(model2,evaluation_set,type = "response"),0.5)
+evaluation_set$TARGET_AMT = predict(model4,evaluation_set)
+
+head(evaluation_set)
+```
+
 
 \clearpage
 
