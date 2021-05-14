@@ -1,0 +1,198 @@
+---
+title: "DS621_Group2_HW5_JC"
+author: "Jagdish Chhabria"
+date: "5/10/2021"
+output: html_document
+---
+
+**Group 2 members:** _Diego Correa, Jagdish Chhabria, Orli Khaimova, Richard Zheng, Stephen Haslett_.
+
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, include = TRUE)
+
+# Load required libraries.
+library(tidyverse)
+library(dplyr)
+library(caret)
+library(pROC)
+library(grid)
+library(Amelia)
+library(ggplot2)
+library(kableExtra)
+library(corrplot)
+library(reshape2)
+library(e1071)
+library(visdat)
+library(mice)
+library(MASS)
+library(Hmisc)
+library(psych)
+library(MASS)
+library(car)
+library(pscl)
+library(AER)
+
+```
+
+## Assignment Overview
+
+In this homework assignment, you will explore, analyze and model a data set containing information on
+approximately 12,000 commercially available wines. The variables are mostly related to the chemical properties of the wine being sold. The response variable is the number of sample cases of wine that were purchased by wine distribution companies after sampling a wine. These cases would be used to provide tasting samples to restaurants and wine stores around the United States. The more sample cases purchased, the more likely is a wine to be sold at a high end restaurant. A large wine manufacturer is studying the data in order to predict the number of wine cases ordered based upon the wine characteristics. If the wine manufacturer can predict the number of cases, then that manufacturer will be able to adjust their wine offering to maximize sales.
+Your objective is to build a count regression model to predict the number of cases of wine that will be sold given certain properties of the wine. HINT: Sometimes, the fact that a variable is missing is actually predictive of the target. You can only use the variables given to you (or variables that you derive from the variables provided).
+Below is a short description of the variables of interest in the data set:
+VARIABLE
+
+```{r dataLoading, echo=FALSE}
+# Pull in the provided wine sales training and evaluation datasets.
+
+training_set<-read.csv("C:\\Jagdish\\MastersPrograms\\CUNY\\DS621 Business Analytics and Data Mining\\HW5\\wine-training-data.csv")
+  
+#training_set <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework_5/wine-training-data.csv',stringsAsFactors = TRUE)
+evaluation_set <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework_5/wine-evaluation-data.csv',stringsAsFactors = TRUE)
+```
+
+## ## Task 1: Data Exploration
+
+**Describe the size and the variables in the wine training data set.**
+
+```{r dataExploration, echo=FALSE}
+# Explore the structure of the training dataset.
+str(training_set)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+```{r}
+names(training_set)[1]<-"INDEX"
+names(training_set)
+```
+
+```{r}
+# Remove the index variable
+training_set<-training_set%>%dplyr::select(-INDEX)
+#%>%mutate(TARGET=as.factor(TARGET))
+#training_set<-training_set%>%dplyr::mutate(TARGET=as.factor(TARGET))
+
+```
+
+
+```{r}
+# Check the structure of the training dataset.
+str(training_set)
+```
+
+
+```{r}
+describe(training_set)
+```
+
+### Missing Values
+
+```{r, dataExplorationMissingValues}
+# Check for missing values
+sapply(training_set, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
+```
+
+
+
+
+```{r}
+
+ggplot(training_set,aes(x=training_set$TARGET))+geom_histogram()
+
+```
+
+```{r}
+# Check count and proportion of 0 values for the TARGET variable
+training_set%>%filter(TARGET==0)%>%summarise(n=n())%>%mutate(freq=round(n/nrow(training_set),4))
+
+```
+
+From the above, we can see that about 21% of the records have a count = 0. Given that more than a fifth of the target variable values are 0, this could be considered as a "zero-inflated" dataset.
+
+
+```{r}
+# Fit the Poisson model for the count variable, with all predictors included
+summary(model1 <- glm(TARGET~., family="poisson", data=training_set))
+
+```
+Based on the p-values above, it looks like the following predictors have a significant impact on the number of wine cases ordered: VolatileAcidity, Alcohol, LabelAppeal, AcidIndex, STARS. All the co-efficients are very small though.
+
+
+```{r}
+# Check for dispersion with this model
+dispersiontest(model1,trafo=1)
+
+```
+
+From the above results, it seems that there is underdispersion in the data, since c < 0.
+
+
+```{r}
+# Fit the Negative Binomial model for the count variable, with all predictors included
+summary(model2<-glm.nb(TARGET~.,data=training_set))
+
+```
+
+
+```{r}
+# Check for overdispersion with this model
+odTest(model2) 
+
+```
+
+Based on the above test statistic value, we fail to reject the Null Hypothesis which states that the Poisson model is better suited for this dataset. So we stick with the Poisson model instead of the Negative Binomial model. 
+
+
+```{r}
+# Fit a zero-inflation poisson model with all predictors included
+summary(model3<-zeroinfl(TARGET~.,data=training_set,dist="poisson"))
+
+```
+
+
+```{r}
+# Fit the Poisson model for the count variable, with selected predictors only
+summary(model4<-glm(TARGET~VolatileAcidity+Alcohol+LabelAppeal+AcidIndex+STARS, family="poisson", data=training_set))
+
+
+```
+
+
+```{r}
+# Fit a zero-inflation poisson model with selected predictors only
+
+summary(model5<-zeroinfl(TARGET~VolatileAcidity+Alcohol+LabelAppeal+AcidIndex+STARS,data=training_set,dist="poisson"))
+
+```
+
+
+
+
+
+```{r}
+# Perform a vuong test to compare model 4 and model 5
+vuong(model4, model5)
+```
+The Vuong test compares the zero-inflated model (model 5) with the ordinary Poisson regression model (model 4). In this case, we can see that our test statistic is significant, indicating that the zero-inflated model is superior to the standard Poisson model.
+
+
+```{r}
+# Predict the target count for the evaluation dataset
+evaluation_set$predicted_target<-predict(model5,type = 'response',newdata = evaluation_set)
+
+```
+
+
+```{r}
+str(evaluation_set)
+
+```
+
+
+
+
