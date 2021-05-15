@@ -1,0 +1,81 @@
+---
+title: "DATA621_HW3"
+author: "Richard"
+date: "4/13/2021"
+output: html_document
+---
+
+# loading packages
+
+```{r}
+library(tidyverse)
+library(caret)
+```
+
+# loading data
+
+```{r}
+url = 'https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework%203/crime-training-data_modified.csv'
+
+training_set = read.csv(url)
+prediction_set = training_set
+```
+
+# EDA
+
+```{r}
+summary(training_set)
+```
+
+```{r}
+row_size = dim(training_set)[1]
+col_size = dim(training_set)[2]
+```
+
+# scatter plots
+
+```{r}
+cols = names(training_set)
+for (col in cols[1:col_size-1]){
+  plot = training_set %>%
+    ggplot(aes_string(x = col,y = 'target'))+geom_point(stat = 'identity')+labs(title = paste(col,'Vs.','target'))
+  print(plot)
+}
+```
+
+# logistic model
+
+```{r}
+logm = glm(target~.-chas,training_set,family = "binomial")
+
+summary(logm)
+```
+
+```{r}
+predict = predict(logm,type = "response")
+predictions = c()
+for (i in predict){
+  if (i>=0.5){
+    predictions =c(predictions,1)
+  }else{
+    predictions = c(predictions,0)
+  }
+}
+
+prediction_set$richard_model = predictions
+
+prediction_set
+
+```
+
+# error calculations
+
+```{r}
+data = prediction_set %>%
+  mutate(richard_model = as.factor(richard_model),
+         target = as.factor(target))
+  
+confusionMatrix(data$richard_model,data$target)
+```
+
+

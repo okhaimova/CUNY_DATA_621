@@ -1,0 +1,157 @@
+---
+title: "Project 3"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(corrplot)
+library(Hmisc)
+```
+
+
+```{r}
+crime_training <- read.csv("https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework%203/crime-training-data_modified.csv")
+
+crime_evaluation <- read.csv("https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework%203/crime-evaluation-data_modified.csv")
+```
+
+### Data Exploration
+
+There are 466 different neighborhoods in a major city with indications of whether or
+not they are above the median crime rate, with 13 variables that are related to location,
+transportatioon,, environment, housing, and education. There is also no missing variables.
+
+According to the correlation table, there are is a high correlation between the accessibility
+to radial highwaays and the full-value propety tax rate per $10,000. Also the weighted 
+means of distance to the five Boston employment centers is usually negativelly correlated
+with the other variables.
+
+The nitrogen oxide levels, age of homes, and accessibilty to radial highways is the most 
+correlated to the target variable, which is if the crime rate is above the median.
+
+According to the graphs, the distanace to the employment centers tends to be lower 
+and right-skewed as well as the lwoer status of the population. Meanwhile, the age 
+of homes tends to be left skewed.
+
+```{r}
+summary(crime_training)
+
+# creates a list with the correlations and p values 
+corr_data<- rcorr(as.matrix(crime_training))
+corr_p <- round(corr_data$P,4)
+# this takes the values and correlations and makes it into a 2 column dataframe
+flattenCorrMatrix <- function(cormat, pmat) {
+  ut <- upper.tri(cormat)
+  data.frame(
+    row = rownames(cormat)[row(cormat)[ut]],
+    column = rownames(cormat)[col(cormat)[ut]],
+    cor  =(cormat)[ut],
+    p = pmat[ut]
+    )
+}
+# sorted the pairs of correlations by their p value to show variables with the biggest
+# relationships, with the p showing the significance value
+sorted_cor <- flattenCorrMatrix(corr_data$r, corr_data$P) %>%
+   arrange(desc(abs(cor)))
+
+#the highest correlations in betwen variables
+head(sorted_cor)
+
+#correlations with only target variable
+flattenCorrMatrix(corr_data$r, corr_data$P) %>%
+  filter(column == "target") %>%
+  arrange(desc(abs(cor)))
+
+#correlation plot
+corrplot(corr_data$r, type = "upper", order = "hclust", tl.col = "black")
+
+# boxplots
+crime_training %>%
+  gather(variable, value, zn:target) %>%
+  ggplot(., aes(x= variable, y=value)) + 
+  geom_boxplot() +
+  facet_wrap(~variable, scales ="free", ncol = 4) +
+  labs(x = element_blank(), y = element_blank())
+
+#histograms
+crime_training %>%
+  gather(variable, value, zn:target) %>%
+  ggplot(., aes(x = value)) + 
+  geom_histogram(bins = 25) +
+  facet_wrap(~variable, scales ="free", ncol = 4) +
+  labs(x = element_blank(), y = element_blank())
+
+
+```
+
+
+### Data Preparation
+
+There is no missing values in the dataset so there is no need for imputations. Transformations to
+the variables wouldd be applied during the model buidling, and can be transformations such as
+log, square root, quadratic, inverse, etc.
+
+### Model Building
+
+#### Model 1
+
+This model uses all the variables which acts as a guideline on which variables would need to 
+included, excluded, or tranformed. `nox` has the greatest affect on the taregt but the coefficients 
+do not make sense as the intercept is out of bounds.
+
+```{r, fig.show = "hold", out.width="50%"}
+model1 <- glm(target ~  ., family = "binomial", data = crime_training)
+
+summary(model1)
+
+plot(fitted(model1), resid(model1), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
+abline(h = 0, col = "darkorange", lwd = 2)
+qqnorm(resid(model1), main = "Normal Q-Q Plot", col = "darkgrey")
+qqline(resid(model1), col = "dodgerblue", lwd = 2)
+```
+
+#### Model 2
+
+- Log/sqrt was applied to `age` and `lstat` as they were skewed.
+- `rm` was removed since it had a high p  value.
+
+```{r, fig.show = "hold", out.width="50%"}
+model2 <- glm(target ~ zn + indus + chas + nox +  sqrt(age) + dis + rad + tax + ptratio + 
+                sqrt(lstat) + medv, family = "binomial", data = crime_training)
+
+summary(model2)
+
+plot(fitted(model1), resid(model1), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
+abline(h = 0, col = "darkorange", lwd = 2)
+qqnorm(resid(model1), main = "Normal Q-Q Plot", col = "darkgrey")
+qqline(resid(model1), col = "dodgerblue", lwd = 2)
+```
+
+#### Model 3 
+
+- Log/sqrt was applied to `age` and `stat` as they were skewed.
+- `rm` was removed since it had a high p  value.
+- `lstat` was removed due to high p value
+- ratio of `rad`/`tax`, the full value propety tax value squared per index of accessibility to radial highways
+- `indus` was removed 
+```{r, fig.show = "hold", out.width="50%"}
+model3 <- glm(target ~ zn  + chas + nox +  sqrt(age) + dis + rad + tax + ptratio + 
+                 medv + I(rad/tax^2), family = "binomial", data = crime_training)
+
+summary(model3)
+
+plot(fitted(model1), resid(model1), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
+abline(h = 0, col = "darkorange", lwd = 2)
+qqnorm(resid(model1), main = "Normal Q-Q Plot", col = "darkgrey")
+qqline(resid(model1), col = "dodgerblue", lwd = 2)
+```
+
+
+
+
+
