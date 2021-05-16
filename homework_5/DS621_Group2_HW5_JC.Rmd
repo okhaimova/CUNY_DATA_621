@@ -2,7 +2,9 @@
 title: "DS621_Group2_HW5_JC"
 author: "Jagdish Chhabria"
 date: "5/10/2021"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 **Group 2 members:** _Diego Correa, Jagdish Chhabria, Orli Khaimova, Richard Zheng, Stephen Haslett_.
@@ -48,9 +50,9 @@ VARIABLE
 ```{r dataLoading, echo=FALSE}
 # Pull in the provided wine sales training and evaluation datasets.
 
-training_set<-read.csv("C:\\Jagdish\\MastersPrograms\\CUNY\\DS621 Business Analytics and Data Mining\\HW5\\wine-training-data.csv")
+#training_set<-read.csv("C:\\Jagdish\\MastersPrograms\\CUNY\\DS621 Business Analytics and Data Mining\\HW5\\wine-training-data.csv")
   
-#training_set <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework_5/wine-training-data.csv',stringsAsFactors = TRUE)
+training_set <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework_5/wine-training-data.csv',stringsAsFactors = TRUE)
 evaluation_set <- read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework_5/wine-evaluation-data.csv',stringsAsFactors = TRUE)
 ```
 
@@ -66,7 +68,8 @@ str(training_set)
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
 
-```{r}
+```{r fixIndexName, echo=FALSE}
+# Fix the name of the Index column
 names(training_set)[1]<-"INDEX"
 names(training_set)
 ```
@@ -90,19 +93,13 @@ str(training_set)
 describe(training_set)
 ```
 
-### Missing Values
-
-```{r, dataExplorationMissingValues}
-# Check for missing values
-sapply(training_set, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
-```
-
-
 
 
 ```{r}
-
-ggplot(training_set,aes(x=training_set$TARGET))+geom_histogram()
+# Plot the distribution of the TARGET variable
+#ggplot(training_set,aes(x=training_set$TARGET))+geom_histogram()
+wine.cases<-table(training_set$TARGET)%>%data.frame()
+wine.cases%>%ggplot(aes(x=Var1,y=Freq))+geom_bar(stat="identity", fill="red")+ labs(x = "Wine Cases Ordered", y = "Count")
 
 ```
 
@@ -115,17 +112,188 @@ training_set%>%filter(TARGET==0)%>%summarise(n=n())%>%mutate(freq=round(n/nrow(t
 From the above, we can see that about 21% of the records have a count = 0. Given that more than a fifth of the target variable values are 0, this could be considered as a "zero-inflated" dataset.
 
 
+
 ```{r}
-# Fit the Poisson model for the count variable, with all predictors included
-summary(model1 <- glm(TARGET~., family="poisson", data=training_set))
+# Check distributions for all the variables
+melt(training_set)%>%ggplot(aes(x=value))+geom_density(fill='blue')+facet_wrap(~variable,scales='free')
 
 ```
+From the above, we can see that 4 of the variables including the target variable are multi-modal, while the rest look leptokurtic. Given that we don't intend to use linear regression as the model, we will not attempt to transform the varaibles to make them more normally distributed.
+
+
+```{r checkOutliers, echo=FALSE}
+
+ggplot(stack(training_set),aes(x=ind,y=values))+geom_boxplot()+theme(legend.position="none")+theme(axis.text.x=element_text(angle=45, hjust=1))+theme(panel.background = element_rect(fill = 'grey'))
+
+```
+From the above, we can see that these variables have significant outliers: TotalSulfurDioxide, FreeSulfurDioxide and ResidualSugar.
+
+
+```{r}
+# Function to remove outliers
+remove_outliers<-function(x) {
+quant <- quantile(x, probs=c(.25, .75), na.rm = T)
+cap <- quantile(x, probs=c(.05, .95), na.rm = T)
+H <- 1.5 * IQR(x, na.rm = T)
+x[x < (quant[1] - H)] <- cap[1]
+x[x > (quant[2] + H)] <- cap[2]
+
+return(x)
+}
+
+```
+
+
+```{r}
+# Remove outliers from training data
+training_set$FixedAcidity <- remove_outliers(training_set$FixedAcidity)
+training_set$VolatileAcidity <- remove_outliers(training_set$VolatileAcidity)
+training_set$CitricAcid <- remove_outliers(training_set$CitricAcid)
+training_set$ResidualSugar <- remove_outliers(training_set$ResidualSugar)
+training_set$Chlorides <- remove_outliers(training_set$Chlorides)
+training_set$FreeSulfurDioxide <- remove_outliers(training_set$FreeSulfurDioxide)
+training_set$TotalSulfurDioxide <- remove_outliers(training_set$TotalSulfurDioxide)
+training_set$Density <- remove_outliers(training_set$Density)
+training_set$pH <- remove_outliers(training_set$pH)
+training_set$Sulphates <- remove_outliers(training_set$Sulphates)
+training_set$Alcohol <- remove_outliers(training_set$Alcohol)
+training_set$AcidIndex <- remove_outliers(training_set$AcidIndex)
+
+```
+
+
+
+```{r}
+# Remove outliers from evaluation data
+evaluation_set$FixedAcidity <- remove_outliers(evaluation_set$FixedAcidity)
+evaluation_set$VolatileAcidity <- remove_outliers(evaluation_set$VolatileAcidity)
+evaluation_set$CitricAcid <- remove_outliers(evaluation_set$CitricAcid)
+evaluation_set$ResidualSugar <- remove_outliers(evaluation_set$ResidualSugar)
+evaluation_set$Chlorides <- remove_outliers(evaluation_set$Chlorides)
+evaluation_set$FreeSulfurDioxide <- remove_outliers(evaluation_set$FreeSulfurDioxide)
+evaluation_set$TotalSulfurDioxide <- remove_outliers(evaluation_set$TotalSulfurDioxide)
+evaluation_set$Density <- remove_outliers(evaluation_set$Density)
+evaluation_set$pH <- remove_outliers(evaluation_set$pH)
+evaluation_set$Sulphates <- remove_outliers(evaluation_set$Sulphates)
+evaluation_set$Alcohol <- remove_outliers(evaluation_set$Alcohol)
+evaluation_set$AcidIndex <- remove_outliers(evaluation_set$AcidIndex)
+
+```
+
+
+
+```{r deriveCorrelations, echo=FALSE}
+# Calculate correlation with Target variable
+sapply(training_set, function(x) cor(training_set$TARGET,x,use="na.or.complete")) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
+
+```
+
+From the above, we can see that the STARS, LabelAppeal and AcidIndex variables are strogly correlated with the TARGET variable.
+
+```{r plotCorrelations, echo=FALSE}
+# Plot correlations
+corr.wine<-cor(training_set, use = "na.or.complete")
+corrplot(corr.wine)
+
+```
+
+### Missing Values
+
+We check for missing values for each of the variables
+
+```{r, dataExplorationMissingValues}
+# Check for missing values
+sapply(training_set, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
+```
+
+We plot the % of missing values below.
+
+```{r plotMissingData, echo=FALSE}
+# Plot proportion of missing values
+missmap(training_set, col = c("#999900", "#660033"))
+
+```
+
+
+```{r, dataExplorationMissingValues}
+# Check for missing values
+sapply(evaluation_set, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
+```
+
+
+
+We impute the missing values using the predictive mean matching algorithm from the mice library.
+
+```{r imputeMissingValues, echo=FALSE}
+wine.temp<-mice(training_set,m=5,maxit=10,meth='pmm',seed=500, printFlag = F)
+wine.temp<-complete(wine.temp)
+wine.temp$TARGET<-training_set$TARGET
+training_set_imputed<-wine.temp
+
+```
+
+We now use re-check for missing values.
+
+```{r, dataExplorationMissingValues}
+# Check for missing values
+sapply(training_set_imputed, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
+```
+
+
+We impute the missing values using the predictive mean matching algorithm from the mice library.
+
+```{r imputeMissingValues, echo=FALSE}
+wine.eval.temp<-mice(evaluation_set,m=5,maxit=10,meth='pmm',seed=500, printFlag = F)
+wine.eval.temp<-complete(wine.eval.temp)
+wine.eval.temp$TARGET<-evaluation_set$TARGET
+evaluation_set_imputed<-wine.eval.temp
+
+```
+
+We now use re-check for missing values.
+
+```{r, dataExplorationMissingValues}
+# Check for missing values
+sapply(evaluation_set_imputed, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
+```
+
+
+
+
+### Model Building
+
+For modeling count variables, the typical choices of model are:
+
+1) Poisson regression: This is often used for modeling count data because it fits the framework.
+2) Negative binomial regression: This can be used for over-dispersed count data i.e. when the conditional variance exceeds the conditional mean. It can be considered as a generalization of Poisson regression since it has the same mean structure as Poisson regression and it has an extra parameter to model the over-dispersion. 
+3) Zero-inflated regression model: This model attempts to handle the excess zeros problem. Two kinds of zeros can exist in the data: “true zeros” and “excess zeros”. Zero-inflated models estimate two equations simultaneously, one for the count model and one for the excess zeros.
+
+When it comes to count variables, the Poisson regression model (or one of its variants) have a number of advantages over an ordinary linear regression model, including a skew, discrete distribution, and the restriction of predicted values to non-negative numbers. A Poisson model is similar to an ordinary linear regression, with two exceptions. First, it assumes that the errors follow a Poisson, not a normal, distribution. Second, rather than modeling Y as a linear function of the regression coefficients, it models the natural log of the response variable, ln(Y), as a linear function of the coefficients. The Poisson model assumes that the mean and variance of the errors are equal. But usually in practice the variance of the errors is larger than the mean (although it can also be smaller). When the variance is larger than the mean, there are two extensions of the Poisson model that work well. In the over-dispersed Poisson model, an extra parameter is included which estimates how much larger the variance is than the mean. This parameter estimate is then used to correct for the effects of the larger variance on the p-values. An alternative is a negative binomial model. 
+
+
+```{r}
+# Fit the Poisson model for the count variable, with all predictors included
+summary(model1 <- glm(TARGET~., family="poisson", data=training_set_imputed))
+
+```
+Deviance residuals are approximately normally distributed if the model is specified correctly. From the results above, we can see that there is some skeweness in the deviance residuals since median is not quite zero (it is 0.06). Next we examine the Poisson regression coefficients for each of the variables along with the standard errors, z-scores, p-values and 95% confidence intervals for the coefficients. The coefficient for the Alcohol variable is 0.0028. This means that the expected log count for a one-unit increase in Alcohol is .0028. 
+
 Based on the p-values above, it looks like the following predictors have a significant impact on the number of wine cases ordered: VolatileAcidity, Alcohol, LabelAppeal, AcidIndex, STARS. All the co-efficients are very small though.
 
 
 ```{r}
+# Forward step through this model to find the best predictors
+model1.5 <- stepAIC(model1, trace = F)
+summary(model1.5)
+
+
+```
+The forward step algorithm shows that the best fit model results in 2 of the predictors being discarded: FixedAcidity and Residualsugar.
+
+
+```{r}
 # Check for dispersion with this model
-dispersiontest(model1,trafo=1)
+dispersiontest(model1.5,trafo=1)
 
 ```
 
@@ -134,14 +302,22 @@ From the above results, it seems that there is underdispersion in the data, sinc
 
 ```{r}
 # Fit the Negative Binomial model for the count variable, with all predictors included
-summary(model2<-glm.nb(TARGET~.,data=training_set))
+summary(model2<-glm.nb(TARGET~.,data=training_set_imputed))
+
+```
+
+```{r}
+# Forward step through this model to find the best predictors 
+model2.5 <- stepAIC(model2, trace = F)
+summary(model2.5)
 
 ```
 
 
+
 ```{r}
 # Check for overdispersion with this model
-odTest(model2) 
+odTest(model2.5) 
 
 ```
 
@@ -165,11 +341,15 @@ summary(model4<-glm(TARGET~VolatileAcidity+Alcohol+LabelAppeal+AcidIndex+STARS, 
 
 ```{r}
 # Fit a zero-inflation poisson model with selected predictors only
-
 summary(model5<-zeroinfl(TARGET~VolatileAcidity+Alcohol+LabelAppeal+AcidIndex+STARS,data=training_set,dist="poisson"))
 
 ```
 
+```{r}
+# Forward step through this model to find the best predictors
+model5.5 <- stepAIC(model5, trace = F)
+summary(model5.5)
+```
 
 
 
@@ -183,7 +363,7 @@ The Vuong test compares the zero-inflated model (model 5) with the ordinary Pois
 
 ```{r}
 # Predict the target count for the evaluation dataset
-evaluation_set$predicted_target<-predict(model5,type = 'response',newdata = evaluation_set)
+evaluation_set$TARGET<-predict(model5,type = 'response',newdata = evaluation_set)
 
 ```
 
