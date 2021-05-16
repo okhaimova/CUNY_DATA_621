@@ -201,9 +201,10 @@ corrplot(corr.wine)
 
 We check for missing values for each of the variables
 
-```{r, dataExplorationMissingValues}
+```{r dataExploreMissValues, echo=FALSE}
 # Check for missing values
-sapply(training_set, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
+sapply(training_set,function(x) sum(is.na(x)))%>%sort(decreasing=TRUE)%>%kable()%>% kable_styling()
+
 ```
 
 We plot the % of missing values below.
@@ -215,7 +216,7 @@ missmap(training_set, col = c("#999900", "#660033"))
 ```
 
 
-```{r, dataExplorationMissingValues}
+```{r, echo=FALSE}
 # Check for missing values
 sapply(evaluation_set, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
 ```
@@ -224,7 +225,8 @@ sapply(evaluation_set, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>
 
 We impute the missing values using the predictive mean matching algorithm from the mice library.
 
-```{r imputeMissingValues, echo=FALSE}
+```{r, echo=FALSE}
+# Impute missing values for the training data
 wine.temp<-mice(training_set,m=5,maxit=10,meth='pmm',seed=500, printFlag = F)
 wine.temp<-complete(wine.temp)
 wine.temp$TARGET<-training_set$TARGET
@@ -234,15 +236,16 @@ training_set_imputed<-wine.temp
 
 We now use re-check for missing values.
 
-```{r, dataExplorationMissingValues}
-# Check for missing values
+```{r, echo=FALSE}
+# Re-Check for missing values
 sapply(training_set_imputed, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
 ```
 
 
 We impute the missing values using the predictive mean matching algorithm from the mice library.
 
-```{r imputeMissingValues, echo=FALSE}
+```{r, echo=FALSE}
+# Impute missing values for the evaluation data
 wine.eval.temp<-mice(evaluation_set,m=5,maxit=10,meth='pmm',seed=500, printFlag = F)
 wine.eval.temp<-complete(wine.eval.temp)
 wine.eval.temp$TARGET<-evaluation_set$TARGET
@@ -252,12 +255,10 @@ evaluation_set_imputed<-wine.eval.temp
 
 We now use re-check for missing values.
 
-```{r, dataExplorationMissingValues}
-# Check for missing values
+```{r, echo=FALSE}
+# Re-Check for missing values
 sapply(evaluation_set_imputed, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
 ```
-
-
 
 
 ### Model Building
@@ -345,10 +346,10 @@ summary(model5<-zeroinfl(TARGET~VolatileAcidity+Alcohol+LabelAppeal+AcidIndex+ST
 
 ```
 
-```{r}
+```{r, echo=FALSE}
 # Forward step through this model to find the best predictors
-model5.5 <- stepAIC(model5, trace = F)
-summary(model5.5)
+#model5.5 <- stepAIC(model5, trace = F)
+#summary(model5.5)
 ```
 
 
