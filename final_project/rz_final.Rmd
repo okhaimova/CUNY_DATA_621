@@ -1,9 +1,3 @@
----
-title: "prices 606 prices Project Proposal"
-author: "Richard Zheng"
-output: pdf_document
----
-
 # Packages
 
 ```{r}
@@ -87,21 +81,8 @@ imputed = dropped%>%
 ```
 
 
-# Lot Size vs Price
 
-```{r}
-prices %>% 
-  ggplot(aes(x = SalePrice,y = LotArea))+geom_point(size = 2)+ylim(0,50000)
-```
-
-# Paved vs Gravel
-
-```{r}
-prices %>%
-  ggplot(aes(x = Street, y = SalePrice))+geom_boxplot()
-```
-
-
+# building model
 
 ```{r}
 # 70% training set
