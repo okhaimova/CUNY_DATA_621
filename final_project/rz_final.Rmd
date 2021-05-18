@@ -1,0 +1,110 @@
+---
+title: "DATA 606 Data Project Proposal"
+author: "Richard Zheng"
+output: pdf_document
+---
+
+### Packages
+
+```{r}
+library(tidyverse)
+```
+
+### Data Preparation
+
+```{r setup, echo=TRUE, results='hide', warning=FALSE, message=FALSE}
+# load data
+url = 'https://raw.githubusercontent.com/schoolkidrich/housing_price/main/train.csv'
+
+data = read.csv(url, stringsAsFactors = TRUE)
+```
+
+### Research question 
+
+**You should phrase your research question in a way that matches up with the scope of inference your dataset allows for.**
+
+#### What factors are relevant in determining house price? 
+
+### Cases 
+
+**What are the cases, and how many are there?**
+
+```{r}
+# each row represents one house 
+num_cases = length(data[,1])
+print(paste("There are",num_cases,"cases"))
+```
+
+
+### Data collection 
+
+**Describe the method of data collection.**
+
+#### Data is obtained from kaggle as part of one of their competitions
+
+
+### Type of study 
+
+**What type of study is this (observational/experiment)?**
+
+#### This is an observational study
+
+### Data Source 
+
+**If you collected the data, state self-collected. If not, provide a citation/link.**
+
+#### 'https://www.kaggle.com/c/house-prices-advanced-regression-techniques/overview'
+
+
+### Dependent Variable
+
+**What is the response variable? Is it quantitative or qualitative?**
+
+#### Dependant variable are the housing prices. It is quantitative 
+
+### Independent Variable
+
+**You should have two independent variables, one quantitative and one qualitative.**
+
+```{r}
+#There are many variables in this dataset (both quantitative and qualitative ones). I will try to use as many as possible 
+variables = length(names(data))-2
+
+print(paste("There are",variables,"variables"))
+
+```
+
+
+
+### Relevant summary statistics 
+
+**Provide summary statistics for each the variables. Also include appropriate visualizations related to your research question (e.g. scatter plot, boxplots, etc). This step requires the use of R, hence a code chunk is provided below. Insert more code chunks as needed.**
+
+```{r}
+summary(data)
+```
+
+# Lot Size vs Price
+
+```{r}
+data %>% 
+  ggplot(aes(x = SalePrice,y = LotArea))+geom_point(size = 2)+ylim(0,50000)
+```
+
+# Paved vs Gravel
+
+```{r}
+data %>%
+  ggplot(aes(x = Street, y = SalePrice))+geom_boxplot()
+```
+
+
+
+```{r}
+drop = c('Id', 'Alley', 'Heating', 'Condition1', 'Condition2', 'BsmtHalfBath','X3SsnPorch', 'PoolQC','MiscFeature','Fence', 'LotArea', 'Utilities', 'RoofMatl','GarageTypeDetchd', 'TotalBsmtSF', 'GrLivArea', 'GarageType')
+df = data[,!(names(data) %in% drop)]
+
+model1 = lm(SalePrice~., df)
+summary(model1)
+```
+
