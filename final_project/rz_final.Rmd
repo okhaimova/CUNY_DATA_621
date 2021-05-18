@@ -27,14 +27,6 @@ print(paste("There are",num_cases,"cases"))
 ```
 
 
-```{r}
-#There are many variables in this pricesset (both quantitative and qualitative ones). I will try to use as many as possible 
-variables = length(names(prices))-2
-
-print(paste("There are",variables,"variables"))
-
-```
-
 # Notice that there are missing data
 
 ```{r}
