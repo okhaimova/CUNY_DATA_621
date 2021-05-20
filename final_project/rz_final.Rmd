@@ -48,6 +48,16 @@ for (name in col_names){
 }
 ```
 
+# Boxplots
+
+``` {r boxPlots, warning=FALSE, message=FALSE, echo=FALSE}
+# Plot boxplots for all variables.
+long <- prices %>% as.data.frame() %>% melt()
+
+long %>%
+  ggplot(aes(x=value)) + geom_boxplot() + facet_wrap(~variable, scales = 'free')
+```
+
 # Need to drop Utilities column due to lack of diversity
 
 ```{r}
