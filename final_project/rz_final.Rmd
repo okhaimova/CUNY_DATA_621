@@ -88,3 +88,24 @@ summary(model1)
 
 ```
 
+# model 2
+
+```{r}
+# using features with only numeric values
+numeric_df <- train_set %>% dplyr::select(where(is.numeric))
+model2 <- lm(SalePrice~., numeric_df)
+summary(model2)
+```
+
+```{r}
+# looking at residuals
+ggplot(data = model2, aes(x = .fitted, y = .resid)) +
+  geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_smooth(se = FALSE) + xlab("Fitted values") + ylab("Residuals")
+
+ggplot(data = model_two, aes(x = .resid)) + geom_histogram() + xlab("Residuals")
+
+ggplot(data = model_two) + stat_qq(aes(sample = .stdresid)) + geom_abline()
+```
+
+
