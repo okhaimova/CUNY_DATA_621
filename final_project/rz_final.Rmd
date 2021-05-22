@@ -31,7 +31,6 @@ library(reshape2)
 
 
 ## Key Words
-
 Real Estate, House Prices, Multiple Regression, Assessed Value, Home Buyers, Linear Models.
 
 ## Introduction
@@ -45,9 +44,11 @@ The aim of this study is to explore the factors that influence home buyers when 
 
 ## Methodology
 
-## Data Exploration
+## Experimentation and Results:
 
-### Dataset
+### Data Exploration
+
+#### Dataset
 The Ames Housing dataset consists of 81 variables describing the characteristics of 1,460 homes in Ames, Iowa sold between 2006 and 2010. The dataset is available for download via the [Kaggle](https://www.kaggle.com/c/house-prices-advanced-regression-techniques) website. The Ames Housing dataset is feature rich, and contains many of the features that home buyers consider when buying a house such as overall condition, location, number of rooms, etc. Below is a summary of the variables contained within the dataset.
 
 * PID: Parcel identification number - can be used with city web site for parcel review.
@@ -132,7 +133,7 @@ The Ames Housing dataset consists of 81 variables describing the characteristics
 * Sale Condition: Condition of sale
 
 
-### Data Analysis
+#### Data Analysis
 The first step in our data analysis was to get a feel for the data by creating bloxplots of all the variables. This help us to get an idea of the value of each variable, and whether or not a variable was worth keeping in the dataset.
 
 #### Boxplots
@@ -154,7 +155,7 @@ sapply(prices, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable(
 ```
 
 
-### Data Preparation
+#### Data Preparation
 After checking the data for missing values, we decided to drop columns consisting of more than 33% missing values. We did this in order to increase the accuracy of our final models. For the rest of the missing values, rather than removing them, we decided to impute them. The imputation was handled using the MICE package (Multiple Imputation by Chained Equations). This technique uses chained equations, and thus has the ability to impute both numerical and categorical variables.
 
 ```{r dataCleaning, warning=FALSE, message=FALSE, echo=FALSE}
@@ -179,7 +180,7 @@ prices %>%
   ggplot(aes(x = Utilities)) + geom_bar()
 ```
 
-# drop values and impute missing data
+
 
 ```{r, dataManipulation}
 # Drop Id column.
@@ -195,7 +196,7 @@ imputed = dropped %>%
 
 
 
-# building model
+#### Model Building
 
 ```{r}
 # 70% training set
@@ -229,4 +230,13 @@ ggplot(data = model2, aes(x = .resid)) + geom_histogram() + xlab("Residuals")
 ggplot(data = model2) + stat_qq(aes(sample = .stdresid)) + geom_abline()
 ```
 
+#### Model Selection
 
+#### Model Evaluation
+
+
+## Discussion and Conclusions
+
+## References
+
+## Appendices
