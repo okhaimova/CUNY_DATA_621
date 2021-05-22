@@ -1,24 +1,54 @@
-# Packages
+---
+title: "Final Project"
+subtitle: "Predicting Property Prices"
+author: "Group 2"
+date: "5/16/2021"
+output:
 
-```{r}
+  pdf_document:
+    toc: yes
+    toc_depth: 3
+  html_document:
+    df_print: paged
+    toc: yes
+---
+
+**Group 2 members:** _Diego Correa, Jagdish Chhabria, Orli Khaimova, Richard Zheng, Stephen Haslett_.
+
+```{r setup, include=FALSE, echo=TRUE, results='hide', warning=FALSE, message=FALSE}
+# Load the Ames Housing dataset.
+url = 'https://raw.githubusercontent.com/schoolkidrich/housing_price/main/train.csv'
+prices = read.csv(url, stringsAsFactors = TRUE)
+
+# Packages.
 library(tidyverse)
 library(mice)
 ```
 
-# loading data
-
-```{r setup, echo=TRUE, results='hide', warning=FALSE, message=FALSE}
-# load prices
-url = 'https://raw.githubusercontent.com/schoolkidrich/housing_price/main/train.csv'
-
-prices = read.csv(url, stringsAsFactors = TRUE)
-```
+## Abstract
 
 
-### Research question 
+## Key Words
 
-What factors are relevant in determining house price? 
+Real Estate, House Prices, Multiple Regression, Assessed Value, Home Buyers, Linear Models.
 
+## Introduction
+The aim of this study is to explore the factors that influence home buyers when buying homes such as location, property size, age, number of rooms, etc, and how these factors affect house prices. In order to explore this topic, we used the "Ames Housing" dataset.
+
+
+# Literature Review
+
+# Methodology
+
+## Data Exploration
+
+### Dataset
+The Ames Housing dataset consists of 81 variables describing the characteristics of 1,460 homes in Ames, Iowa sold between 2006 and 2010. The dataset is available for download via the [Kaggle](https://www.kaggle.com/c/house-prices-advanced-regression-techniques) website. The Ames Housing dataset is feature rich, and contains many of the features that home buyers consider when buying a house such as overall condition, location, number of rooms etc.  
+
+### Data Description
+
+### Data Analysis
+The first step in our data analysis was to check for missing values. As you can see from the below summary there are quite of few columns with missing values. The main offenders are at the top of the list ()
 
 ```{r}
 # each row represents one house 
