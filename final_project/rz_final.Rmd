@@ -134,9 +134,61 @@ The Ames Housing dataset consists of 81 variables describing the characteristics
 
 
 #### Data Analysis
-The first step in our data analysis was to get a feel for the data by creating bloxplots of all the variables. This help us to get an idea of the value of each variable, and whether or not a variable was worth keeping in the dataset.
+The first step in our data analysis is to get a feel for the data by generating a glimpse of the dataset. As we can see from the below results, the 81 variables contained within the dataset are a mixture of integer, and factor variables.
+
+``` {r, dataGlimpse, warning=FALSE, message=FALSE, echo=FALSE}
+glimpse(prices)
+```
+
+#### Missing Values
+The dataset glimpse results above also reveal something else to us - many of the columns contain missing values which could be problematic when it comes to generating our models. This deserves further investigation, so we will now hone in on these columns to get an idea of the quantity of missing values contained within each column. The table below represents a count of missing values per column in descending order.
+
+```{r, dataExploration, echo=FALSE}
+sapply(prices, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
+```
+
+#### Data Preparation
+The first task when it comes to data preparation is to deal with missing values. Looking at the table above, it appears that there are quite a few columns with missing values (19 columns in all). However, according to the [AMES dataset description](http://jse.amstat.org/v19n3/decock/DataDocumentation.txt), some variables contain genuine NA values that have meaning within the context of the data. For example, an "NA" value in the Alley column represents "No alley access", an "NA" value within the "BsmtQual" column represents "No Basement", and so on. Therefore, to avoid confusion, we imputed these values to more meaningful values, and checked for empty values again.
+
+```{r, imputeGenuineNAValues, warning=FALSE, message=FALSE, echo=FALSE}
+# Replace genuine NA values with more meaningful values. 
+na_replace <- function(dataframe) {
+dataframe %>%
+   mutate(Alley = fct_explicit_na(Alley, na_level = 'NoAlleyAccess'),
+          BsmtQual = fct_explicit_na(BsmtQual, na_level = 'NoBasement'),
+          BsmtCond = fct_explicit_na(BsmtCond, na_level = 'NoBasement'),
+          BsmtExposure = fct_explicit_na(BsmtExposure, na_level = 'NoBasement'),
+          BsmtFinType1 = fct_explicit_na(BsmtFinType1, na_level = 'NoBasement'),
+          BsmtFinType2 = fct_explicit_na(BsmtFinType2, na_level = 'NoBasement'),
+          FireplaceQu = fct_explicit_na(FireplaceQu, na_level = 'NoFireplace'),
+          GarageType = fct_explicit_na(GarageType, na_level = 'NoGarage'),
+          GarageFinish = fct_explicit_na(GarageFinish, na_level = 'NoGarage'),
+          GarageQual = fct_explicit_na(GarageQual, na_level = 'NoGarage'),
+          GarageCond = fct_explicit_na(GarageCond, na_level = 'NoGarage'),
+          PoolQC = fct_explicit_na(PoolQC, na_level = 'NoPool'),
+          Fence = fct_explicit_na(Fence, na_level = 'NoFence'),
+          MiscFeature = fct_explicit_na(MiscFeature, na_level = 'None')
+   )
+}
+
+prices <- na_replace(prices)
+
+# Check for empty values once again to see what affect this has on the data.
+sapply(prices, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
+```
+
+On imputation of all of the genuine NA values in the dataset and re-counting, we can see that the top offending variables are no longer listed as having missing values - great news. However, we are still left with 38 variables that contain missing values.  
+
+
+
+
+
+
+
+
 
 #### Boxplots
+Now that we have an understanding of the variable types, we can create boxplots to get a visual representation of the data. This will help us to get an idea of the value of each variable, and whether or not specific variables should be dropped from the dataset.
 
 ``` {r boxPlots, warning=FALSE, message=FALSE, echo=FALSE}
 # Plot boxplots for all variables.
@@ -146,13 +198,6 @@ long %>%
   ggplot(aes(x=value)) + geom_boxplot() + facet_wrap(~variable, scales = 'free')
 ```
 
-
-#### Missing Values
-We then checked for missing values. As we can see from the data summary below, there are quite a few columns with missing values (19 columns in all). The main offenders are at the top of the list.
-
-```{r, dataExploration, echo=FALSE}
-sapply(prices, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
-```
 
 
 #### Data Preparation
