@@ -38,9 +38,12 @@ Real Estate, House Prices, Multiple Regression, Assessed Value, Home Buyers, Lin
 The aim of this study is to explore the factors that influence home buyers when buying homes such as location, property size, age, number of rooms, etc, and how these factors affect house prices. In order to explore this topic, we used the "Ames Housing" dataset.
 
 
-# Literature Review
+## Literature Review
+[Understanding Recent Trends in House Prices and Home Ownership](https://www.kansascityfed.org/documents/3224/pdf-Shiller_0415.pdf) by Rober J. Shiller investigates some of the factors that affect housing booms. As well as physical factors influencing housing prices, Shiller argues that there are also psychological factors at play such society suggesting that housing as an important investment.
 
-# Methodology
+[Cracking the Ames Housing Dataset with Linear Regression](https://towardsdatascience.com/wrangling-through-dataland-modeling-house-prices-in-ames-iowa-75b9b4086c96) by Alvin T. Tan Investigates the Ames Housing dataset from the point of view of the hedonic pricing regression technique. According to the [Organisation For Economic Co-Operation And Development](https://stats.oecd.org/glossary/detail.asp?ID=1225), the hedonic method is "A regression technique in which observed prices of different qualities or models of the same generic good or service are expressed as a function of the characteristics of the goods or services in question. It is based on the hypothesis that products can be treated as bundles of characteristics and that prices can be attached to the characteristics". Basically, items can be broken into their constituent parts and used to predict the target value based on how much influence those parts bear.
+
+## Methodology
 
 ## Data Exploration
 
@@ -130,38 +133,9 @@ The Ames Housing dataset consists of 81 variables describing the characteristics
 
 
 ### Data Analysis
-The first step in our data analysis was to check for missing values. As you can see from the data summary below, there are quite a few columns with missing values. The main offenders are at the top of the list.
+The first step in our data analysis was to get a feel for the data by creating bloxplots of all the variables. This help us to get an idea of the value of each variable, and whether or not a variable was worth keeping in the dataset.
 
-```{r, dataExploration, echo=FALSE}
-sapply(prices, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
-```
-
-
-
-
-# Notice that there are missing data
-
-```{r}
-summary(prices)
-```
-
-# cleaning data
-
-```{r}
-# Drop columns consisting of more than 33% NAs.
-col_names = names(prices)
-na_count = map(prices, ~sum(is.na(.)))
-num_cases = dim(prices)[1]
-
-drop = c()
-for (name in col_names){
-  if (na_count[name] > (num_cases/3)){
-    drop = c(drop,name)
-  }
-}
-```
-
-# Boxplots
+#### Boxplots
 
 ``` {r boxPlots, warning=FALSE, message=FALSE, echo=FALSE}
 # Plot boxplots for all variables.
@@ -171,11 +145,38 @@ long %>%
   ggplot(aes(x=value)) + geom_boxplot() + facet_wrap(~variable, scales = 'free')
 ```
 
-# Need to drop Utilities column due to lack of diversity
 
-```{r}
-prices%>% 
-  ggplot(aes(x=Utilities))+geom_bar()
+#### Missing Values
+We then checked for missing values. As we can see from the data summary below, there are quite a few columns with missing values (19 columns in all). The main offenders are at the top of the list.
+
+```{r, dataExploration, echo=FALSE}
+sapply(prices, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
+```
+
+
+### Data Preparation
+After checking the data for missing values, we decided to drop columns consisting of more than 33% missing values. We did this in order to increase the accuracy of our final models. For the rest of the missing values, rather than removing them, we decided to impute them. The imputation was handled using the MICE package (Multiple Imputation by Chained Equations). This technique uses chained equations, and thus has the ability to impute both numerical and categorical variables.
+
+```{r dataCleaning, warning=FALSE, message=FALSE, echo=FALSE}
+# Drop columns consisting of more than 33% NAs.
+col_names = names(prices)
+na_count = map(prices, ~sum(is.na(.)))
+num_cases = dim(prices)[1]
+
+drop = c()
+for (name in col_names){
+  if (na_count[name] > (num_cases / 3)){
+    drop = c(drop, name)
+  }
+}
+```
+
+
+We also noticed that there was a distinct lack of diversity in the Utilities column and thus we decided to drop this column. The ID column was also dropped due to the simple fact that it added no value to our final models.
+
+```{r utilitiesAnalysis, warning=FALSE, message=FALSE, echo=FALSE}
+prices %>% 
+  ggplot(aes(x = Utilities)) + geom_bar()
 ```
 
 # drop values and impute missing data
