@@ -470,6 +470,12 @@ head(test.impute)
 
 ## Discussion and Conclusions
 
+```
+Limitations:
+- Dataset only contained houses within Iowa
+- Variables with unballanced levels
+```
+
 ## References
 
 ## Appendices
