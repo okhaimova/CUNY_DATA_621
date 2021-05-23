@@ -44,6 +44,19 @@ The aim of this study is to explore the factors that influence home buyers when 
 
 ## Methodology
 
+In our investigation to predict house prices, we are given eighty-one categorical and numerical independent variables to use in a multiple linear regression model $\hat{Y}_i = \hat{\beta}_0 + \hat{\beta}_1 X_i + \hat{\beta}_1 X_n + \hat{\epsilon}_i$.  
+
+We begin our exploratory analysis by taking a look into all the variables in our data set. We take a glimpse into how the data looks like within the variables in the data set.  From there, we identify the categorical and numerical variables and the number of missing values by variable.  Next in our data exploration, we visualize the the variables and its distribution using boxplots. Lastly, we illustrate the correlation of our independent variables to our dependent variable, house prices.
+
+The preparation for the data set only includes the imputation of our missing values using classification regression tree.  The data set used is otherwise clean -- variables' datatypes are properly stored.
+
+In creating a multiple linear models, we begin with our first model that includes all eighty independent variables to predict the house prices.  The next model created is the model that only includes the numerical values, ignoring the categorical independent variables. LAST MODEL MISSING.
+
+
+The four assumptions used in our model are: 1) Residuals of the model are nearly normal. 2) Variability of the residuals is nearly constant. 3) Residuals are independent. 4) Each variable is linearly related to the outcome.  We evaluate these assumptions through plotting the residuals in a quantile-quantile (q-q) plot, distribution plot, and by taking the absolute values against the fitted values to determine that the variability and distribution are normal.
+
+In choosing the best fitting multiple linear regression model, we prioritze the model's adjusted R-squared values and the variability of the residuals.
+
 ## Experimentation and Results:
 
 ### Data Exploration
