@@ -28,38 +28,6 @@ library(reshape2)
 library(Hmisc)
 ```
 
-## Abstract
-
-
-## Key Words
-Real Estate, House Prices, Multiple Regression, Assessed Value, Home Buyers, Linear Models.
-
-## Introduction
-The aim of this study is to explore the factors that influence home buyers when buying homes such as location, property size, age, number of rooms, etc, and how these factors affect house prices. In order to explore this topic, we used the "Ames Housing" dataset.
-
-
-## Literature Review
-[Understanding Recent Trends in House Prices and Home Ownership](https://www.kansascityfed.org/documents/3224/pdf-Shiller_0415.pdf) by Robert J. Shiller investigates some of the factors that affect housing booms. As well as physical factors influencing housing prices, Shiller argues that there are also psychological factors at play such as society's insistence that housing is an important investment.
-
-[Cracking the Ames Housing Dataset with Linear Regression](https://towardsdatascience.com/wrangling-through-dataland-modeling-house-prices-in-ames-iowa-75b9b4086c96) by Alvin T. Tan Investigates the Ames Housing dataset from the point of view of the hedonic pricing regression technique. According to the [Organisation For Economic Co-Operation And Development](https://stats.oecd.org/glossary/detail.asp?ID=1225), the hedonic method is "A regression technique in which observed prices of different qualities or models of the same generic good or service are expressed as a function of the characteristics of the goods or services in question. It is based on the hypothesis that products can be treated as bundles of characteristics and that prices can be attached to the characteristics". Basically, items can be broken into their constituent parts and used to predict the target value based on how much influence those parts bear.
-
-## Methodology
-
-In our investigation to predict house prices, we are given eighty-one categorical and numerical independent variables to use in a multiple linear regression model $\hat{Y}_i = \hat{\beta}_0 + \hat{\beta}_1 X_i + \hat{\beta}_1 X_n + \hat{\epsilon}_i$.  
-
-We begin our exploratory analysis by taking a look into all the variables in our data set. We take a glimpse into how the data looks like within the variables in the data set.  From there, we identify the categorical and numerical variables and the number of missing values by variable.  Next in our data exploration, we visualize the the variables and its distribution using boxplots. Lastly, we illustrate the correlation of our independent variables to our dependent variable, house prices.
-
-The preparation for the data set only includes the imputation of our missing values using classification regression tree.  The data set used is otherwise clean -- variables' datatypes are properly stored.
-
-In creating a multiple linear models, we begin with our first model that includes all eighty independent variables to predict the house prices.  The next model created is the model that only includes the numerical values, ignoring the categorical independent variables. LAST MODEL MISSING.
-
-
-The four assumptions used in our model are: 1) Residuals of the model are nearly normal. 2) Variability of the residuals is nearly constant. 3) Residuals are independent. 4) Each variable is linearly related to the outcome.  We evaluate these assumptions through plotting the residuals in a quantile-quantile (q-q) plot, distribution plot, and by taking the absolute values against the fitted values to determine that the variability and distribution are normal.
-
-In choosing the best fitting multiple linear regression model, we prioritze the model's adjusted R-squared values and the variability of the residuals.
-
-## Experimentation and Results:
-
 ### Data Exploration
 
 #### Dataset
