@@ -431,8 +431,11 @@ ggplot(data = model4) + stat_qq(aes(sample = .stdresid)) + geom_abline()
 
 #### Model Selection
 
-we selected model 1 due to it fitting the data well (R^2 = 0.8802) and its only slightly worse than model 3 
-(R%2 = 0.8813), which is more computationally expensive. We think model 1 would be a better fit for a production environment where such a model might be used, to predict housing prices on demand, as it is a great fit and computes reasonably fast 
+we selected model 4 due to it fitting the data well as its adjusted $R^2$ is the highest at 0.9143,
+which is slightly more than model 3 with an adjusted $R^2$ of 0.9077, which was more 
+computationally expensive. We think model 4 would be a better fit for a production environment
+where such a model might be used, to predict housing prices on demand, as it is a great fit 
+and computes reasonably fast. 
 
 ```{r}
 # the model is suitable for linaer regression as residuals meet the following criteria 
