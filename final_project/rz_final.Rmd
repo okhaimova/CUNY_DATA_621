@@ -293,7 +293,9 @@ Homes that have amenities or special feautures such as central air conditioning 
 are more likely to sell for more.
 
 ```{r,Plots, warning=FALSE, message=FALSE, fig.show = "hold", out.width="33%", echo=FALSE}
-ggplot(test_set, aes(x = GrLivArea, y = SalePrice)) +
+train_set %>%
+  mutate(TotalSqFt = GrLivArea + TotalBsmtSF) %>%
+  ggplot(., aes(x = TotalSqFt, y = SalePrice)) +
   geom_point() + 
   geom_smooth() +
   ggtitle("Total Square Footage vs Sales Price") +
