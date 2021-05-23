@@ -19,7 +19,7 @@ output:
 # Load the Ames Housing dataset.
 url = 'https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/final_project/train.csv'
 prices = read.csv(url, stringsAsFactors = TRUE)
-
+prices.test = read.csv('https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/final_project/test.csv')
 # Packages.
 library(tidyverse)
 library(mice)
@@ -193,12 +193,18 @@ na_replace <- function(dataframe) {
            MiscFeature = fct_explicit_na(MiscFeature, na_level = 'None')
     )
 }
-
 prices <- na_replace(prices)
-
 # Check for empty values once again to see what affect this has on the data.
 sapply(prices, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
 ```
+
+# dropping values
+
+```{r}
+drop = c(drop, "Id",'Condition1', 'Condition2', 'RoofStyle')
+dropped = prices[,!(names(prices) %in% drop)]
+```
+
 
 On imputation of all of the genuine NA values in the dataset and re-counting, we can see that the top offending variables are no longer listed as having missing values - great news. However, we are still left with 38 variables that contain missing values, so our next order of business is to deal with these variables.
 
@@ -222,9 +228,7 @@ mice_imputation <- function(dataframe) {
   imputation <- mice(dataframe, m = 1, method = 'cart')
   imputed <- mice::complete(imputation)
 }
-
-imputed <- mice_imputation(prices)
-
+imputed <- mice_imputation(dropped)
 # Check for empty values once again to see what affect MICE had on our data.
 sapply(imputed, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
 ```
@@ -235,15 +239,9 @@ Now that we have a dataset that is free from empty values, we can move on to bui
 #### Model One
 ```{r, modelOne, warning=FALSE, message=FALSE, echo=FALSE}
 # 70% training set.
-num_cases = dim(prices)[1]
-train = sample(seq(num_cases), size = round(num_cases * .7))
-train_set = imputed[train,]
-test_set = imputed[-train,]
-
-
+train_set = imputed
 model1 = lm(SalePrice~., train_set)
 summary(model1)
-
 ```
 
 
@@ -261,9 +259,7 @@ summary(model2)
 ggplot(data = model2, aes(x = .fitted, y = .resid)) +
   geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
   geom_smooth(se = FALSE) + xlab("Fitted values") + ylab("Residuals")
-
 ggplot(data = model2, aes(x = .resid)) + geom_histogram() + xlab("Residuals")
-
 ggplot(data = model2) + stat_qq(aes(sample = .stdresid)) + geom_abline()
 ```
 
@@ -279,14 +275,24 @@ summary(model3)
 ggplot(data = model3, aes(x = .fitted, y = .resid)) +
   geom_point() + geom_hline(yintercept = 0, linetype = 'dashed') +
   geom_smooth(se = FALSE) + xlab('Fitted values') + ylab('Residuals')
-
 ggplot(data = model3, aes(x = .resid)) + geom_histogram() + xlab('Residuals')
-
 ggplot(data = model3) + stat_qq(aes(sample = .stdresid)) + geom_abline()
 ```
 
 
 #### Model Selection
+
+```{r}
+test = prices.test[,!(names(prices.test) %in% drop)]
+test.impute = test%>%
+  na_replace()%>%
+  mice_imputation
+
+prices.test$SalePrice = predict(model2, test.impute)
+
+prices.test
+```
+
 
 #### Model Evaluation
 
