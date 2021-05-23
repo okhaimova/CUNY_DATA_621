@@ -471,6 +471,8 @@ head(test.impute)
 ## Discussion and Conclusions
 
 ```
+Conclusion:
+- GrLivArea (Square feet of living area) and neighborhood are the attributes that affect the price the most
 Limitations:
 - Dataset only contained houses within Iowa
 - Variables with unballanced levels
