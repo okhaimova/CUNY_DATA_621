@@ -25,6 +25,7 @@ library(tidyverse)
 library(mice)
 library(kableExtra)
 library(reshape2)
+library(Hmisc)
 ```
 
 ## Abstract
@@ -198,9 +199,9 @@ prices <- na_replace(prices)
 sapply(prices, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
 ```
 
-# dropping values
+##### Dropping values
 
-```{r}
+```{r, DroppingValues, echo = FALSE}
 drop = c(drop, "Id",'Condition1', 'Condition2', 'RoofStyle')
 dropped = prices[,!(names(prices) %in% drop)]
 ```
@@ -233,6 +234,117 @@ imputed <- mice_imputation(dropped)
 sapply(imputed, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
 ```
 
+#### Correlations
+
+```{r, Correlations, warning=FALSE, message=FALSE, echo=FALSE}
+corr_data<- select_if(train_set,is.numeric) %>%
+  select(-Id) %>%
+  as.matrix(.) %>%
+  rcorr(.)
+corr_p <- round(corr_data$P,4)
+
+# this takes the values and correlations and makes it into a 2 column dataframe
+flattenCorrMatrix <- function(cormat, pmat) {
+  ut <- upper.tri(cormat)
+  data.frame(
+    row = rownames(cormat)[row(cormat)[ut]],
+    column = rownames(cormat)[col(cormat)[ut]],
+    cor  =(cormat)[ut],
+    p = pmat[ut]
+    )
+}
+# sorted the pairs of correlations by their p value to show variables with the biggest
+# relationships, with the p showing the significance value
+flattenCorrMatrix(corr_data$r, corr_data$P) %>%
+  arrange(desc(abs(cor))) %>%
+  head(10) %>%
+  kable(caption = 'Correlations of numeric predictors') %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+x <- flattenCorrMatrix(corr_data$r, corr_data$P) %>%
+  arrange(desc(abs(cor))) %>%
+  filter(column == 'SalePrice') %>%
+  head(10) %>%
+  kable(caption = 'Correlations of numeric predictors against the Sales Price') %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+Looking at the correlations, the amount of cars in the garage is correlated with garage area. It was
+also expected that the year the house was built is highly correlated with the year the garage was built.
+Similarly, the basement is correlated to the first floor's square footage. The more rooms a house has, the
+greater the living area is. 
+
+The overall quality of the material and finish of the house seems to have the greatest
+affect on the sales price. The second variable to have a great affect is the total
+square footage of the house, followed by the amount of cars in the garage and its
+square footage.
+
+#### Graphs
+
+As shown by the graph, there is an outlier due to a house being much larger than 
+all the other houses in the city. Overall, as the total square footage increase, so does
+the sales price.
+
+The sales price for each house tend to vary more as the overall quality increases. 
+The overall condition of the house does not affect the sales price as one would expect
+because houses with only a condition of 5 out of 10 tend to sell for more. Single
+family homes also tend to vary in price compared to the other building types.
+
+Homes that have amenities or special feautures such as central air conditioning and fireplaces
+are more likely to sell for more.
+
+```{r,Plots, warning=FALSE, message=FALSE, fig.show = "hold", out.width="33%", echo=FALSE}
+ggplot(test_set, aes(x = GrLivArea, y = SalePrice)) +
+  geom_point() + 
+  geom_smooth() +
+  ggtitle("Total Square Footage vs Sales Price") +
+  scale_y_continuous(labels = scales::label_comma())
+
+train_set %>%
+  mutate(OverallQual= as.factor(OverallQual)) %>%
+  ggplot(., aes(x = OverallQual, y = SalePrice)) + 
+  geom_boxplot() +
+  labs(title = 'Distributions of Overall Quality vs Sales Price') +
+  scale_y_continuous(labels = scales::label_comma())
+
+train_set %>%
+  mutate(OverallCond= as.factor(OverallCond)) %>%
+  ggplot(., aes(x = OverallCond, y = SalePrice)) + 
+  geom_boxplot() +
+  labs(title = 'Distributions of Overall Condition vs Sales Price') +
+  scale_y_continuous(labels = scales::label_comma())
+
+train_set %>%
+  mutate(GarageCars = as.factor(GarageCars)) %>%
+  ggplot(., aes(x = GarageCars, y = SalePrice)) + 
+  geom_boxplot() +
+  labs(title = 'Distributions of Amount of Cars in Garage vs Sales Price') +
+  scale_y_continuous(labels = scales::label_comma())
+
+train_set %>%
+  mutate(BldgType = recode(BldgType, `2fmCon` = "2Fam Conversion",
+                           `Twnhs` = "Townhouse Inside",
+                           `TwnhsE` = "Townhouse End Unit")) %>%
+  ggplot(., aes(x = BldgType, y = SalePrice)) + 
+  geom_boxplot() +
+  labs(title = 'Type of Building vs Sales Price') +
+  scale_y_continuous(labels = scales::label_comma())
+
+train_set %>%
+  ggplot(., aes(x = CentralAir, y = SalePrice)) + 
+  geom_boxplot() +
+  labs(title = 'Central Air Coniditioning vs Sales Price') +
+  scale_y_continuous(labels = scales::label_comma())
+
+train_set %>%
+  mutate(Fireplaces = ifelse(Fireplaces == 0, "no", "yes")) %>%
+  ggplot(., aes(x = Fireplaces, y = SalePrice)) + 
+  geom_boxplot() +
+  labs(title = 'Fireplaces vs Sales Price') +
+  scale_y_continuous(labels = scales::label_comma())
+
+```
+
+
 ### Model Building
 Now that we have a dataset that is free from empty values, we can move on to building our models.
 
@@ -243,6 +355,13 @@ model1 = lm(SalePrice~., train_set)
 summary(model1)
 ```
 
+```{r, modelOneRisiduals,  warning=FALSE, message=FALSE, fig.show = "hold", out.width="33%", echo=FALSE}
+ggplot(data = model1, aes(x = .fitted, y = .resid)) +
+  geom_point() + geom_hline(yintercept = 0, linetype = 'dashed') +
+  geom_smooth(se = FALSE) + xlab('Fitted values') + ylab('Residuals')
+ggplot(data = model1, aes(x = .resid)) + geom_histogram() + xlab('Residuals')
+ggplot(data = model1) + stat_qq(aes(sample = .stdresid)) + geom_abline()
+```
 
 #### Model Two
 Model two filters out non numeric values.
@@ -253,7 +372,7 @@ model2 <- lm(SalePrice~., numeric_df)
 summary(model2)
 ```
 
-```{r, modelTwoRisiduals,  warning=FALSE, message=FALSE, echo=FALSE}
+```{r, modelTwoRisiduals,  warning=FALSE, message=FALSE, fig.show = "hold", out.width="33%", echo=FALSE}
 # Looking at residuals.
 ggplot(data = model2, aes(x = .fitted, y = .resid)) +
   geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
@@ -270,7 +389,7 @@ model3 <- step(model1, direction = 'backward', trace = 0)
 summary(model3)
 ```
 
-```{r, modelThreeRisiduals,  warning=FALSE, message=FALSE, echo=FALSE}
+```{r, modelThreeRisiduals,  warning=FALSE, message=FALSE, fig.show = "hold", out.width="33%", echo=FALSE}
 ggplot(data = model3, aes(x = .fitted, y = .resid)) +
   geom_point() + geom_hline(yintercept = 0, linetype = 'dashed') +
   geom_smooth(se = FALSE) + xlab('Fitted values') + ylab('Residuals')
@@ -278,6 +397,35 @@ ggplot(data = model3, aes(x = .resid)) + geom_histogram() + xlab('Residuals')
 ggplot(data = model3) + stat_qq(aes(sample = .stdresid)) + geom_abline()
 ```
 
+#### Model Four
+
+Model four utilizes forward selection for the most part with recommendations from the
+maker of the data set where he suggested to include the neighborhood in the model. 
+Bathrooms were combined together as `TotalBath` and the age of the home is denoted by 
+`Age`. `SaleCondition` was regrouped as normal and other. `NewHome` is whether or not the
+house sold is new.
+
+```{r, modelFour, warning=FALSE, message=FALSE, echo=FALSE}
+model4 <- train_set %>%
+  filter(GrLivArea < 4000) %>%
+  mutate(TotalBath = BsmtFullBath + 0.5 * BsmtHalfBath + FullBath + 0.5 * HalfBath,
+         Age = YrSold - YearBuilt,
+         SaleCondition = ifelse(SaleCondition == "Normal", "normal", "other"),
+         PorchSqFt = ScreenPorch + X3SsnPorch + EnclosedPorch + OpenPorchSF + WoodDeckSF,
+         NewHome = ifelse(SaleType == 'New', 'new', 'other')) %>%
+  lm(log(SalePrice) ~ GrLivArea + TotalBsmtSF + OverallQual + Neighborhood + NewHome +
+       Age + CentralAir + Fireplaces + GarageArea + TotalBath  + PorchSqFt + PoolArea +
+       SaleCondition + MSZoning + BldgType + OverallCond , data = .)
+summary(model4)
+```
+
+```{r, modelFourRisiduals,  warning=FALSE, message=FALSE, fig.show = "hold", out.width="33%", echo=FALSE}
+ggplot(data = model4, aes(x = .fitted, y = .resid)) +
+  geom_point() + geom_hline(yintercept = 0, linetype = 'dashed') +
+  geom_smooth(se = FALSE) + xlab('Fitted values') + ylab('Residuals')
+ggplot(data = model4, aes(x = .resid)) + geom_histogram() + xlab('Residuals')
+ggplot(data = model4) + stat_qq(aes(sample = .stdresid)) + geom_abline()
+```
 
 #### Model Selection
 
@@ -290,10 +438,8 @@ we selected model 1 due to it fitting the data well (R^2 = 0.8802) and its only 
 ggplot(data = model1, aes(x = .fitted, y = .resid)) +
   geom_point() + geom_hline(yintercept = 0, linetype = 'dashed') +
   geom_smooth(se = FALSE) + xlab('Fitted values') + ylab('Residuals')
-
 # residuals are normally distributed
 ggplot(data = model1, aes(x = .resid)) + geom_histogram() + xlab('Residuals')
-
 # qq plot also shows that residuals are almost normal
 ggplot(data = model1) + stat_qq(aes(sample = .stdresid)) + geom_abline()
 ```
@@ -306,9 +452,7 @@ test = prices.test[,!(names(prices.test) %in% drop)]
 test.impute = test%>%
   na_replace()%>%
   mice_imputation
-
 prices.test$SalePrice = predict(model1, test.impute)
-
 head(prices.test)
 ```
 
