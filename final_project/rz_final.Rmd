@@ -199,6 +199,118 @@ prices <- na_replace(prices)
 sapply(prices, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
 ```
 
+#### Correlations
+
+```{r, Correlations, warning=FALSE, message=FALSE, echo=FALSE}
+corr_data<- select_if(prices,is.numeric) %>%
+  select(-Id) %>%
+  as.matrix(.) %>%
+  rcorr(.)
+corr_p <- round(corr_data$P,4)
+
+# this takes the values and correlations and makes it into a 2 column dataframe
+flattenCorrMatrix <- function(cormat, pmat) {
+  ut <- upper.tri(cormat)
+  data.frame(
+    row = rownames(cormat)[row(cormat)[ut]],
+    column = rownames(cormat)[col(cormat)[ut]],
+    cor  =(cormat)[ut],
+    p = pmat[ut]
+    )
+}
+# sorted the pairs of correlations by their p value to show variables with the biggest
+# relationships, with the p showing the significance value
+flattenCorrMatrix(corr_data$r, corr_data$P) %>%
+  arrange(desc(abs(cor))) %>%
+  head(10) %>%
+  kable(caption = 'Correlations of numeric predictors') %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+flattenCorrMatrix(corr_data$r, corr_data$P) %>%
+  arrange(desc(abs(cor))) %>%
+  filter(column == 'SalePrice') %>%
+  head(10) %>%
+  kable(caption = 'Correlations of numeric predictors against the Sales Price') %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+Looking at the correlations, the amount of cars in the garage is correlated with garage area. It was
+also expected that the year the house was built is highly correlated with the year the garage was built.
+Similarly, the basement is correlated to the first floor's square footage. The more rooms a house has, the
+greater the living area is. 
+
+The overall quality of the material and finish of the house seems to have the greatest
+affect on the sales price. The second variable to have a great affect is the total
+square footage of the house, followed by the amount of cars in the garage and its
+square footage.
+
+#### Graphs
+
+As shown by the graph, there is an outlier due to a house being much larger than 
+all the other houses in the city. Overall, as the total square footage increase, so does
+the sales price.
+
+The sales price for each house tend to vary more as the overall quality increases. 
+The overall condition of the house does not affect the sales price as one would expect
+because houses with only a condition of 5 out of 10 tend to sell for more. Single
+family homes also tend to vary in price compared to the other building types.
+
+Homes that have amenities or special feautures such as central air conditioning and fireplaces
+are more likely to sell for more.
+
+```{r,Plots, warning=FALSE, message=FALSE, fig.show = "hold", out.width="33%", echo=FALSE}
+prices %>%
+  mutate(TotalSqFt = GrLivArea + TotalBsmtSF) %>%
+  ggplot(., aes(x = TotalSqFt, y = SalePrice)) +
+  geom_point() + 
+  geom_smooth() +
+  ggtitle("Total Square Footage vs Sales Price") +
+  scale_y_continuous(labels = scales::label_comma())
+
+prices %>%
+  mutate(OverallQual= as.factor(OverallQual)) %>%
+  ggplot(., aes(x = OverallQual, y = SalePrice)) + 
+  geom_boxplot() +
+  labs(title = 'Distributions of Overall Quality vs Sales Price') +
+  scale_y_continuous(labels = scales::label_comma())
+
+prices %>%
+  mutate(OverallCond= as.factor(OverallCond)) %>%
+  ggplot(., aes(x = OverallCond, y = SalePrice)) + 
+  geom_boxplot() +
+  labs(title = 'Distributions of Overall Condition vs Sales Price') +
+  scale_y_continuous(labels = scales::label_comma())
+
+prices %>%
+  mutate(GarageCars = as.factor(GarageCars)) %>%
+  ggplot(., aes(x = GarageCars, y = SalePrice)) + 
+  geom_boxplot() +
+  labs(title = 'Distributions of Amount of Cars in Garage vs Sales Price') +
+  scale_y_continuous(labels = scales::label_comma())
+
+prices %>%
+  mutate(BldgType = recode(BldgType, `2fmCon` = "2Fam Conversion",
+                           `Twnhs` = "Townhouse Inside",
+                           `TwnhsE` = "Townhouse End Unit")) %>%
+  ggplot(., aes(x = BldgType, y = SalePrice)) + 
+  geom_boxplot() +
+  labs(title = 'Type of Building vs Sales Price') +
+  scale_y_continuous(labels = scales::label_comma())
+
+prices %>%
+  ggplot(., aes(x = CentralAir, y = SalePrice)) + 
+  geom_boxplot() +
+  labs(title = 'Central Air Coniditioning vs Sales Price') +
+  scale_y_continuous(labels = scales::label_comma())
+
+prices %>%
+  mutate(Fireplaces = ifelse(Fireplaces == 0, "no", "yes")) %>%
+  ggplot(., aes(x = Fireplaces, y = SalePrice)) + 
+  geom_boxplot() +
+  labs(title = 'Fireplaces vs Sales Price') +
+  scale_y_continuous(labels = scales::label_comma())
+
+```
+
 ##### Dropping values
 
 ```{r, DroppingValues, echo = FALSE}
@@ -232,118 +344,6 @@ mice_imputation <- function(dataframe) {
 imputed <- mice_imputation(dropped)
 # Check for empty values once again to see what affect MICE had on our data.
 sapply(imputed, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
-```
-
-#### Correlations
-
-```{r, Correlations, warning=FALSE, message=FALSE, echo=FALSE}
-corr_data<- select_if(train_set,is.numeric) %>%
-  select(-Id) %>%
-  as.matrix(.) %>%
-  rcorr(.)
-corr_p <- round(corr_data$P,4)
-
-# this takes the values and correlations and makes it into a 2 column dataframe
-flattenCorrMatrix <- function(cormat, pmat) {
-  ut <- upper.tri(cormat)
-  data.frame(
-    row = rownames(cormat)[row(cormat)[ut]],
-    column = rownames(cormat)[col(cormat)[ut]],
-    cor  =(cormat)[ut],
-    p = pmat[ut]
-    )
-}
-# sorted the pairs of correlations by their p value to show variables with the biggest
-# relationships, with the p showing the significance value
-flattenCorrMatrix(corr_data$r, corr_data$P) %>%
-  arrange(desc(abs(cor))) %>%
-  head(10) %>%
-  kable(caption = 'Correlations of numeric predictors') %>% 
-  kable_styling(bootstrap_options = c("striped", "hover"))
-
-x <- flattenCorrMatrix(corr_data$r, corr_data$P) %>%
-  arrange(desc(abs(cor))) %>%
-  filter(column == 'SalePrice') %>%
-  head(10) %>%
-  kable(caption = 'Correlations of numeric predictors against the Sales Price') %>% 
-  kable_styling(bootstrap_options = c("striped", "hover"))
-```
-Looking at the correlations, the amount of cars in the garage is correlated with garage area. It was
-also expected that the year the house was built is highly correlated with the year the garage was built.
-Similarly, the basement is correlated to the first floor's square footage. The more rooms a house has, the
-greater the living area is. 
-
-The overall quality of the material and finish of the house seems to have the greatest
-affect on the sales price. The second variable to have a great affect is the total
-square footage of the house, followed by the amount of cars in the garage and its
-square footage.
-
-#### Graphs
-
-As shown by the graph, there is an outlier due to a house being much larger than 
-all the other houses in the city. Overall, as the total square footage increase, so does
-the sales price.
-
-The sales price for each house tend to vary more as the overall quality increases. 
-The overall condition of the house does not affect the sales price as one would expect
-because houses with only a condition of 5 out of 10 tend to sell for more. Single
-family homes also tend to vary in price compared to the other building types.
-
-Homes that have amenities or special feautures such as central air conditioning and fireplaces
-are more likely to sell for more.
-
-```{r,Plots, warning=FALSE, message=FALSE, fig.show = "hold", out.width="33%", echo=FALSE}
-train_set %>%
-  mutate(TotalSqFt = GrLivArea + TotalBsmtSF) %>%
-  ggplot(., aes(x = TotalSqFt, y = SalePrice)) +
-  geom_point() + 
-  geom_smooth() +
-  ggtitle("Total Square Footage vs Sales Price") +
-  scale_y_continuous(labels = scales::label_comma())
-
-train_set %>%
-  mutate(OverallQual= as.factor(OverallQual)) %>%
-  ggplot(., aes(x = OverallQual, y = SalePrice)) + 
-  geom_boxplot() +
-  labs(title = 'Distributions of Overall Quality vs Sales Price') +
-  scale_y_continuous(labels = scales::label_comma())
-
-train_set %>%
-  mutate(OverallCond= as.factor(OverallCond)) %>%
-  ggplot(., aes(x = OverallCond, y = SalePrice)) + 
-  geom_boxplot() +
-  labs(title = 'Distributions of Overall Condition vs Sales Price') +
-  scale_y_continuous(labels = scales::label_comma())
-
-train_set %>%
-  mutate(GarageCars = as.factor(GarageCars)) %>%
-  ggplot(., aes(x = GarageCars, y = SalePrice)) + 
-  geom_boxplot() +
-  labs(title = 'Distributions of Amount of Cars in Garage vs Sales Price') +
-  scale_y_continuous(labels = scales::label_comma())
-
-train_set %>%
-  mutate(BldgType = recode(BldgType, `2fmCon` = "2Fam Conversion",
-                           `Twnhs` = "Townhouse Inside",
-                           `TwnhsE` = "Townhouse End Unit")) %>%
-  ggplot(., aes(x = BldgType, y = SalePrice)) + 
-  geom_boxplot() +
-  labs(title = 'Type of Building vs Sales Price') +
-  scale_y_continuous(labels = scales::label_comma())
-
-train_set %>%
-  ggplot(., aes(x = CentralAir, y = SalePrice)) + 
-  geom_boxplot() +
-  labs(title = 'Central Air Coniditioning vs Sales Price') +
-  scale_y_continuous(labels = scales::label_comma())
-
-train_set %>%
-  mutate(Fireplaces = ifelse(Fireplaces == 0, "no", "yes")) %>%
-  ggplot(., aes(x = Fireplaces, y = SalePrice)) + 
-  geom_boxplot() +
-  labs(title = 'Fireplaces vs Sales Price') +
-  scale_y_continuous(labels = scales::label_comma())
-
 ```
 
 
