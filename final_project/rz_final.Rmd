@@ -17,7 +17,7 @@ output:
 
 ```{r setup, include=FALSE, echo=TRUE, results='hide', warning=FALSE, message=FALSE}
 # Load the Ames Housing dataset.
-url = 'https://raw.githubusercontent.com/schoolkidrich/housing_price/main/train.csv'
+url = 'https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/final_project/train.csv'
 prices = read.csv(url, stringsAsFactors = TRUE)
 
 # Packages.
@@ -147,8 +147,9 @@ The dataset glimpse results above also reveal something else to us - many of the
 sapply(prices, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
 ```
 
-#### Data Preparation
-The first task when it comes to data preparation is to deal with missing values. Looking at the table above, it appears that there are quite a few columns with missing values (19 columns in all). However, according to the [AMES dataset description](http://jse.amstat.org/v19n3/decock/DataDocumentation.txt), some variables contain genuine NA values that have meaning within the context of the data. For example, an "NA" value in the Alley column represents "No alley access", an "NA" value within the "BsmtQual" column represents "No Basement", and so on. Therefore, to avoid confusion, we imputed these values to more meaningful values, and checked for empty values again.
+### Data Preparation
+#### Data Imputation
+The first order of business when it comes to data preparation is to deal with the missing values in the data. Looking at the table above, it appears that there are quite a few columns containing NA values (19 columns in all). However, according to the [AMES dataset description](http://jse.amstat.org/v19n3/decock/DataDocumentation.txt), some variables contain genuine NA values that have meaning within the context of the data. For example, an "NA" value in the Alley column represents "No alley access", an "NA" value within the "BsmtQual" column represents "No Basement", and so on. Therefore, to prevent these from being interpreted as true empty NA values, we imputed them to have more meaningful values (i.e. NoAlleyAccess, NoBasement), and ran the empty values check again.
 
 ```{r, imputeGenuineNAValues, warning=FALSE, message=FALSE, echo=FALSE}
 # Replace genuine NA values with more meaningful values. 
@@ -177,7 +178,29 @@ prices <- na_replace(prices)
 sapply(prices, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
 ```
 
-On imputation of all of the genuine NA values in the dataset and re-counting, we can see that the top offending variables are no longer listed as having missing values - great news. However, we are still left with 38 variables that contain missing values.  
+On imputation of all of the genuine NA values in the dataset and re-counting, we can see that the top offending variables are no longer listed as having missing values - great news. However, we are still left with 38 variables that contain missing values, so our next order of business is to deal with these variables.
+
+There are several imputation options available to us at this point. We can do nothing (*not a lot of help as this will hinder the quality of our models*), remove observations that contain missing values (*better to avoid this option if possible as it may affect the accuracy of our results*), use Multivariate Imputation by Chained Equation (MICE), k-nearest neighbors, or impute using mean/median values.
+
+Taking a look at the Glimpse report we generated at the begining of our study, our dataset consists of both numerical and categorical variables. For this reason, the **MICE** imputation method would appear to be our best option as it deals with both numerical and categorical variables.
+
+After running the MICE algorithm on our dataset and re-running the empty values check, we were left with zero missing values (*as reflected in the table below*).
+
+```{r, miceImputation, warning=FALSE, message=FALSE, echo=FALSE}
+# Impute missing values using the MICE algorithm.
+mice_imputation <- function(dataframe) {
+  imputation <- mice(dataframe, m = 1, method = 'cart')
+  imputed <- mice::complete(imputation)
+}
+
+prices <- mice_imputation(prices)
+
+# Check for empty values once again to see what affect MICE had on our data.
+sapply(imputed, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
+```
+
+
+
 
 
 
@@ -205,16 +228,16 @@ After checking the data for missing values, we decided to drop columns consistin
 
 ```{r dataCleaning, warning=FALSE, message=FALSE, echo=FALSE}
 # Drop columns consisting of more than 33% NAs.
-col_names = names(prices)
-na_count = map(prices, ~sum(is.na(.)))
-num_cases = dim(prices)[1]
+#col_names = names(prices)
+#na_count = map(prices, ~sum(is.na(.)))
+#num_cases = dim(prices)[1]
 
-drop = c()
-for (name in col_names){
-  if (na_count[name] > (num_cases / 3)){
-    drop = c(drop, name)
-  }
-}
+#drop = c()
+#for (name in col_names){
+#  if (na_count[name] > (num_cases / 3)){
+#    drop = c(drop, name)
+#  }
+#}
 ```
 
 
@@ -229,14 +252,14 @@ prices %>%
 
 ```{r, dataManipulation}
 # Drop Id column.
-drop = c(drop, "Id", 'Utilities')
-dropped = prices[, !(names(prices) %in% drop)]
+#drop = c(drop, "Id", 'Utilities')
+#dropped = prices[, !(names(prices) %in% drop)]
 
-imputed = dropped %>%
+#imputed = dropped %>%
   # Impute missing values.
-  type.convert(.) %>%
-  mice(m = 5, meth = 'cart') %>%
-  complete()
+#  type.convert(.) %>%
+#  mice(m = 5, meth = 'cart') %>%
+#  complete()
 ```
 
 
@@ -245,7 +268,7 @@ imputed = dropped %>%
 
 ```{r}
 # 70% training set
-train = sample(seq(num_cases),size = round(num_cases*.7))
+train = sample(seq(num_cases), size = round(num_cases * .7))
 train_set = imputed[train,]
 test_set = imputed[-train,]
 
