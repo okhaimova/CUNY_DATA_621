@@ -238,7 +238,6 @@ Now that we have a dataset that is free from empty values, we can move on to bui
 
 #### Model One
 ```{r, modelOne, warning=FALSE, message=FALSE, echo=FALSE}
-# 70% training set.
 train_set = imputed
 model1 = lm(SalePrice~., train_set)
 summary(model1)
