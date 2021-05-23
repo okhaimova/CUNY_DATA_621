@@ -152,24 +152,33 @@ sapply(prices, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable(
 The first order of business when it comes to data preparation is to deal with the missing values in the data. Looking at the table above, it appears that there are quite a few columns containing NA values (19 columns in all). However, according to the [AMES dataset description](http://jse.amstat.org/v19n3/decock/DataDocumentation.txt), some variables contain genuine NA values that have meaning within the context of the data. For example, an "NA" value in the Alley column represents "No alley access", an "NA" value within the "BsmtQual" column represents "No Basement", and so on. Therefore, to prevent these from being interpreted as true empty NA values, we imputed them to have more meaningful values (i.e. NoAlleyAccess, NoBasement), and ran the empty values check again.
 
 ```{r, imputeGenuineNAValues, warning=FALSE, message=FALSE, echo=FALSE}
-# Replace genuine NA values with more meaningful values. 
+#' na_replace - NA Replace.
+#'
+#' Given the Ames Housing dataset, converts genuine NA values that have
+#' meaning within the context of the data to more meaningful values, and
+#' returns the altered dataset to illiminate the mistaken interpretation
+#' of the term "NA" as a genuine missing value.
+#'
+#' @param dataframe The Ames dataset as a dataframe.
+#'
+#' @return The Ames dataset with genuine NA values imputed to human friendly values.
 na_replace <- function(dataframe) {
-dataframe %>%
-   mutate(Alley = fct_explicit_na(Alley, na_level = 'NoAlleyAccess'),
-          BsmtQual = fct_explicit_na(BsmtQual, na_level = 'NoBasement'),
-          BsmtCond = fct_explicit_na(BsmtCond, na_level = 'NoBasement'),
-          BsmtExposure = fct_explicit_na(BsmtExposure, na_level = 'NoBasement'),
-          BsmtFinType1 = fct_explicit_na(BsmtFinType1, na_level = 'NoBasement'),
-          BsmtFinType2 = fct_explicit_na(BsmtFinType2, na_level = 'NoBasement'),
-          FireplaceQu = fct_explicit_na(FireplaceQu, na_level = 'NoFireplace'),
-          GarageType = fct_explicit_na(GarageType, na_level = 'NoGarage'),
-          GarageFinish = fct_explicit_na(GarageFinish, na_level = 'NoGarage'),
-          GarageQual = fct_explicit_na(GarageQual, na_level = 'NoGarage'),
-          GarageCond = fct_explicit_na(GarageCond, na_level = 'NoGarage'),
-          PoolQC = fct_explicit_na(PoolQC, na_level = 'NoPool'),
-          Fence = fct_explicit_na(Fence, na_level = 'NoFence'),
-          MiscFeature = fct_explicit_na(MiscFeature, na_level = 'None')
-   )
+  dataframe %>%
+    mutate(Alley = fct_explicit_na(Alley, na_level = 'NoAlleyAccess'),
+           BsmtQual = fct_explicit_na(BsmtQual, na_level = 'NoBasement'),
+           BsmtCond = fct_explicit_na(BsmtCond, na_level = 'NoBasement'),
+           BsmtExposure = fct_explicit_na(BsmtExposure, na_level = 'NoBasement'),
+           BsmtFinType1 = fct_explicit_na(BsmtFinType1, na_level = 'NoBasement'),
+           BsmtFinType2 = fct_explicit_na(BsmtFinType2, na_level = 'NoBasement'),
+           FireplaceQu = fct_explicit_na(FireplaceQu, na_level = 'NoFireplace'),
+           GarageType = fct_explicit_na(GarageType, na_level = 'NoGarage'),
+           GarageFinish = fct_explicit_na(GarageFinish, na_level = 'NoGarage'),
+           GarageQual = fct_explicit_na(GarageQual, na_level = 'NoGarage'),
+           GarageCond = fct_explicit_na(GarageCond, na_level = 'NoGarage'),
+           PoolQC = fct_explicit_na(PoolQC, na_level = 'NoPool'),
+           Fence = fct_explicit_na(Fence, na_level = 'NoFence'),
+           MiscFeature = fct_explicit_na(MiscFeature, na_level = 'None')
+    )
 }
 
 prices <- na_replace(prices)
@@ -187,7 +196,15 @@ Taking a look at the Glimpse report we generated at the begining of our study, o
 After running the MICE algorithm on our dataset and re-running the empty values check, we were left with zero missing values (*as reflected in the table below*).
 
 ```{r, miceImputation, warning=FALSE, message=FALSE, echo=FALSE}
-# Impute missing values using the MICE algorithm.
+#' mice_imputation- Mice Imputation.
+#'
+#' Given the Ames Housing dataset, runs the MICE algorithm on the dataset
+#' to impute both numerical and categorical missing values.
+#'
+#' @param dataframe The Ames dataset as a dataframe.
+#'
+#' @return The Ames dataset with missing values imputed to complete values.
+#'
 mice_imputation <- function(dataframe) {
   imputation <- mice(dataframe, m = 1, method = 'cart')
   imputed <- mice::complete(imputation)
@@ -223,22 +240,7 @@ long %>%
 
 
 
-#### Data Preparation
-After checking the data for missing values, we decided to drop columns consisting of more than 33% missing values. We did this in order to increase the accuracy of our final models. For the rest of the missing values, rather than removing them, we decided to impute them. The imputation was handled using the MICE package (Multiple Imputation by Chained Equations). This technique uses chained equations, and thus has the ability to impute both numerical and categorical variables.
 
-```{r dataCleaning, warning=FALSE, message=FALSE, echo=FALSE}
-# Drop columns consisting of more than 33% NAs.
-#col_names = names(prices)
-#na_count = map(prices, ~sum(is.na(.)))
-#num_cases = dim(prices)[1]
-
-#drop = c()
-#for (name in col_names){
-#  if (na_count[name] > (num_cases / 3)){
-#    drop = c(drop, name)
-#  }
-#}
-```
 
 
 We also noticed that there was a distinct lack of diversity in the Utilities column and thus we decided to drop this column. The ID column was also dropped due to the simple fact that it added no value to our final models.
@@ -268,6 +270,7 @@ prices %>%
 
 ```{r}
 # 70% training set
+num_cases = dim(prices)[1]
 train = sample(seq(num_cases), size = round(num_cases * .7))
 train_set = imputed[train,]
 test_set = imputed[-train,]
