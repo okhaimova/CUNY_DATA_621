@@ -223,10 +223,10 @@ mice_imputation <- function(dataframe) {
   imputed <- mice::complete(imputation)
 }
 
-prices <- mice_imputation(prices)
+imputed <- mice_imputation(prices)
 
 # Check for empty values once again to see what affect MICE had on our data.
-sapply(prices, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
+sapply(imputed, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
 ```
 
 ### Model Building
