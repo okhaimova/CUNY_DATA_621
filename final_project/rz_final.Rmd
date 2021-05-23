@@ -213,65 +213,15 @@ mice_imputation <- function(dataframe) {
 prices <- mice_imputation(prices)
 
 # Check for empty values once again to see what affect MICE had on our data.
-sapply(imputed, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
+sapply(prices, function(x) sum(is.na(x))) %>% sort(decreasing = TRUE) %>% kable() %>% kable_styling()
 ```
 
+### Model Building
+Now that we have a dataset that is free from empty values, we can move on to building our models.
 
-
-
-
-
-
-
-
-
-
-
-#### Boxplots
-Now that we have an understanding of the variable types, we can create boxplots to get a visual representation of the data. This will help us to get an idea of the value of each variable, and whether or not specific variables should be dropped from the dataset.
-
-``` {r boxPlots, warning=FALSE, message=FALSE, echo=FALSE}
-# Plot boxplots for all variables.
-long <- prices %>% as.data.frame() %>% melt()
-
-long %>%
-  ggplot(aes(x=value)) + geom_boxplot() + facet_wrap(~variable, scales = 'free')
-```
-
-
-
-
-
-
-We also noticed that there was a distinct lack of diversity in the Utilities column and thus we decided to drop this column. The ID column was also dropped due to the simple fact that it added no value to our final models.
-
-```{r utilitiesAnalysis, warning=FALSE, message=FALSE, echo=FALSE}
-prices %>% 
-  ggplot(aes(x = Utilities)) + geom_bar()
-```
-
-
-
-```{r, dataManipulation}
-# Drop Id column.
-#drop = c(drop, "Id", 'Utilities')
-#dropped = prices[, !(names(prices) %in% drop)]
-
-#imputed = dropped %>%
-  # Impute missing values.
-#  type.convert(.) %>%
-#  mice(m = 5, meth = 'cart') %>%
-#  complete()
-```
-
-
-
-#### Model Building
-
-Now that we have a datasdet that is free from emptry values, we can move on to build our models.
-
-```{r}
-# 70% training set
+#### Model One
+```{r, modelOne, warning=FALSE, message=FALSE, echo=FALSE}
+# 70% training set.
 num_cases = dim(prices)[1]
 train = sample(seq(num_cases), size = round(num_cases * .7))
 train_set = imputed[train,]
@@ -283,17 +233,18 @@ summary(model1)
 
 ```
 
-# model 2
 
-```{r}
-# using features with only numeric values
+#### Model Two
+Model two filters out non numeric values.
+```{r, modelTwo, warning=FALSE, message=FALSE, echo=FALSE}
+# Using features with only numeric values.
 numeric_df <- train_set %>% dplyr::select(where(is.numeric))
 model2 <- lm(SalePrice~., numeric_df)
 summary(model2)
 ```
 
-```{r}
-# looking at residuals
+```{r, modelTwoRisiduals,  warning=FALSE, message=FALSE, echo=FALSE}
+# Looking at residuals.
 ggplot(data = model2, aes(x = .fitted, y = .resid)) +
   geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
   geom_smooth(se = FALSE) + xlab("Fitted values") + ylab("Residuals")
@@ -302,6 +253,25 @@ ggplot(data = model2, aes(x = .resid)) + geom_histogram() + xlab("Residuals")
 
 ggplot(data = model2) + stat_qq(aes(sample = .stdresid)) + geom_abline()
 ```
+
+
+#### Model Three
+Model three utilizes model one, but uses backward stepwise elimination.
+```{r, modelThree, warning=FALSE, message=FALSE, echo=FALSE}
+model3 <- step(model1, direction = 'backward', trace = 0)
+summary(model3)
+```
+
+```{r, modelThreeRisiduals,  warning=FALSE, message=FALSE, echo=FALSE}
+ggplot(data = model3, aes(x = .fitted, y = .resid)) +
+  geom_point() + geom_hline(yintercept = 0, linetype = 'dashed') +
+  geom_smooth(se = FALSE) + xlab('Fitted values') + ylab('Residuals')
+
+ggplot(data = model3, aes(x = .resid)) + geom_histogram() + xlab('Residuals')
+
+ggplot(data = model3) + stat_qq(aes(sample = .stdresid)) + geom_abline()
+```
+
 
 #### Model Selection
 
