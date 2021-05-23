@@ -408,16 +408,16 @@ Bathrooms were combined together as `TotalBath` and the age of the home is denot
 house sold is new.
 
 ```{r, modelFour, warning=FALSE, message=FALSE, echo=FALSE}
-model4 <- train_set %>%
+transform = train_set %>%
   filter(GrLivArea < 4000) %>%
   mutate(TotalBath = BsmtFullBath + 0.5 * BsmtHalfBath + FullBath + 0.5 * HalfBath,
          Age = YrSold - YearBuilt,
          SaleCondition = ifelse(SaleCondition == "Normal", "normal", "other"),
          PorchSqFt = ScreenPorch + X3SsnPorch + EnclosedPorch + OpenPorchSF + WoodDeckSF,
-         NewHome = ifelse(SaleType == 'New', 'new', 'other')) %>%
-  lm(log(SalePrice) ~ GrLivArea + TotalBsmtSF + OverallQual + Neighborhood + NewHome +
-       Age + CentralAir + Fireplaces + GarageArea + TotalBath  + PorchSqFt + PoolArea +
-       SaleCondition + MSZoning + BldgType + OverallCond , data = .)
+         NewHome = ifelse(SaleType == 'New', 'new', 'other'))
+model4 = lm(log(SalePrice) ~ GrLivArea + TotalBsmtSF + OverallQual + Neighborhood + NewHome +
+     Age + CentralAir + Fireplaces + GarageArea + TotalBath  + PorchSqFt + PoolArea +
+     SaleCondition + MSZoning + BldgType + OverallCond , data = transform)
 summary(model4)
 ```
 
@@ -440,13 +440,13 @@ and computes reasonably fast.
 ```{r}
 # the model is suitable for linaer regression as residuals meet the following criteria 
 # residuals are clustered around 0
-ggplot(data = model1, aes(x = .fitted, y = .resid)) +
+ggplot(data = model4, aes(x = .fitted, y = .resid)) +
   geom_point() + geom_hline(yintercept = 0, linetype = 'dashed') +
   geom_smooth(se = FALSE) + xlab('Fitted values') + ylab('Residuals')
 # residuals are normally distributed
-ggplot(data = model1, aes(x = .resid)) + geom_histogram() + xlab('Residuals')
+ggplot(data = model4, aes(x = .resid)) + geom_histogram() + xlab('Residuals')
 # qq plot also shows that residuals are almost normal
-ggplot(data = model1) + stat_qq(aes(sample = .stdresid)) + geom_abline()
+ggplot(data = model4) + stat_qq(aes(sample = .stdresid)) + geom_abline()
 ```
 
 
@@ -456,9 +456,15 @@ ggplot(data = model1) + stat_qq(aes(sample = .stdresid)) + geom_abline()
 test = prices.test[,!(names(prices.test) %in% drop)]
 test.impute = test%>%
   na_replace()%>%
-  mice_imputation
-prices.test$SalePrice = predict(model1, test.impute)
-head(prices.test)
+  mice_imputation%>%
+  filter(GrLivArea < 4000) %>%
+  mutate(TotalBath = BsmtFullBath + 0.5 * BsmtHalfBath + FullBath + 0.5 * HalfBath,
+         Age = YrSold - YearBuilt,
+         SaleCondition = ifelse(SaleCondition == "Normal", "normal", "other"),
+         PorchSqFt = ScreenPorch + X3SsnPorch + EnclosedPorch + OpenPorchSF + WoodDeckSF,
+         NewHome = ifelse(SaleType == 'New', 'new', 'other'))
+test.impute$SalePrice = exp(predict(model4, test.impute))
+head(test.impute)
 ```
 
 
