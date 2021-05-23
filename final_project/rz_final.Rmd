@@ -307,7 +307,7 @@ test.impute = test%>%
   na_replace()%>%
   mice_imputation
 
-prices.test$SalePrice = predict(model3, test.impute)
+prices.test$SalePrice = predict(model1, test.impute)
 
 head(prices.test)
 ```
