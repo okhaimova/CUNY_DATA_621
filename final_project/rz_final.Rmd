@@ -434,5 +434,3 @@ test.impute = test%>%
 test.impute$SalePrice = exp(predict(model4, test.impute))
 head(test.impute)
 ```
-
-## Appendices
